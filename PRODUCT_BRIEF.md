@@ -6,7 +6,9 @@ A mid-sized engineering and production company in Agder designs and delivers mar
 
 The company needs a better way to track production jobs as they move from engineering and purchasing, through supplier production, inspection, and delivery, to internal assembly. Today, information is spread across Excel files, emails, and individual follow-ups, making it difficult to maintain a clear and reliable overview.
 
-The Production Tracking System (PTS) will provide an internal web application for tracking this information. External suppliers will exchange updates through controlled Excel files rather than accessing the company's internal systems directly, since a level of classified documentation adds another layer of complexity.
+The Production Tracking System (PTS) will provide an internal web application for tracking this information. External suppliers exchange updates through controlled Excel files rather than accessing the company's internal systems directly, since a level of classified documentation adds another layer of complexity.
+
+**All data in this project is fictional.** The case is based on a real type of company, but no real company data, drawings, or supplier information is stored in the repository.
 
 ## The Problem
 
@@ -24,71 +26,172 @@ The company also operates in a controlled IT environment, meaning external suppl
 
 ## The Solution
 
-PTS will give employees and project engineers one internal overview of production jobs and their current status.
+PTS gives the internal user one overview of production jobs and their current status, and a controlled way to exchange updates with suppliers through Excel.
 
-For each job, the system can show information such as:
+### What the system shows per job
 
 - Job ID
-- Drawing number and revision
+- Drawing number and current revision
 - Description
 - Quantity
 - Supplier
-- Production status
-- Due date
-- Inspection status
-- Delivery status
-- Open issues
+- Production status (and On hold reason, if any)
+- Inspection request (type), if any
+- Completed quantity
+- Due date and the supplier's expected completion date
+- Open issues and warnings (delay, revision mismatch)
 
-Suppliers receive a controlled Excel file containing the jobs relevant to them. They can update defined fields — production status, completed quantity, inspection requests, and issues.
+### The internal user's workflow
 
-When the file is returned, the system validates the information, compares it with existing data, and shows the changes to an internal user. The database is only updated after the import has been reviewed and approved.
+1. **Create jobs** in PTS with drawing number, revision, quantity, supplier and due date.
+2. **Download an Excel file** for one supplier, containing that supplier's open jobs.
+3. **Send the file to the supplier** by email or through a shared folder. This transfer happens outside PTS and is done manually.
+4. **Receive the updated file** from the supplier (email or shared folder) and **upload it** to PTS.
+5. **Review the import.** PTS validates every row and shows, per job, what changed compared to the database, which rows were rejected and why, and which rows carry warnings.
+6. **Approve or reject the whole import.** Only after approval is the database updated.
+7. **Follow up** from the dashboard: jobs on hold, ready for inspection, delayed, or affected by a new drawing revision.
 
-## What Makes This Different
+### Drawing revisions
 
-PTS is designed around the practical needs of an engineering and production company rather than trying to become a complete ERP or production management system.
+Drawings themselves live outside PTS. When a new drawing revision is approved for production, the internal user places it in the shared folder with the supplier and informs the project manager and job owner by email, as today. In addition, the user **updates the current revision on the job in PTS manually**. PTS then marks the job as *"new revision — send updated Excel to supplier"*, and flags any later import that still reports the old revision.
 
-The key focus is the connection between internal production control and external suppliers: suppliers can provide production updates without direct access to the company's internal network or database, while the company gets a structured and controlled way to receive, validate, and approve those updates.
+PTS stores only the **current** revision of each job, not a revision history. The import log still shows which revision each supplier file reported.
 
-The system also helps identify issues such as invalid statuses, unexpected changes, and drawing revision mismatches — problems that are easy to miss in an Excel-and-email workflow.
+## The Excel File
+
+Each export is a fixed template with locked and editable columns.
+
+### Locked columns (visible to the supplier, not to be changed)
+
+| Column | Notes |
+|---|---|
+| Export ID | Unique per exported file |
+| Export date | Date the file was generated |
+| Job ID | |
+| Drawing number | |
+| Revision | Current revision at the time of export |
+| Description | |
+| Quantity | Ordered quantity |
+| Supplier | |
+| Due date | The company's required date |
+
+### Editable columns (filled in by the supplier)
+
+| Column | Allowed values |
+|---|---|
+| Production status | `Not started`, `In production`, `On hold`, `Ready for inspection`, `Completed` |
+| On hold reason | `Drawing issue`, `Missing material`, `Check requested`, `Other` (required when status is `On hold`) |
+| Inspection type | `Before painting`, `Final` (required when status is `Ready for inspection`) |
+| Completed quantity | Whole number from 0 to ordered quantity |
+| Expected completion date | Valid date |
+| Comment / issue description | Free text (required when On hold reason is `Other`) |
+
+Internal-only information, such as inspection results and delivery status, is not included in the file.
+
+### Production statuses
+
+| Status | Meaning |
+|---|---|
+| `Not started` | Sent to supplier, work not started |
+| `In production` | Supplier is working on the job |
+| `On hold` | Stopped — the supplier must give a reason, e.g. a drawing issue, missing material, or a request for the company to come and check something |
+| `Ready for inspection` | Supplier requests inspection, either before painting (surface treatment) or final inspection |
+| `Completed` | Production finished |
+
+## Validation Rules
+
+Every row in an uploaded file is checked against these rules.
+
+### Rejected (the row is not imported and the reason is shown)
+
+1. Production status is not one of the allowed values.
+2. Status is `On hold` without a reason, or the reason is `Other` without a comment.
+3. Status is `Ready for inspection` without an inspection type.
+4. Completed quantity is not a whole number, is negative, or is greater than the ordered quantity.
+5. Expected completion date is not a valid date.
+6. Job ID does not exist in PTS, or belongs to a different supplier.
+
+### Warning (the row is imported on approval, but flagged for the user)
+
+7. **Revision mismatch:** the revision in the file differs from the job's current revision in PTS, meaning the supplier may be working from an outdated drawing.
+8. **Outdated file:** a newer export exists for the same supplier.
+9. **Unexpected change:** a locked column has been changed by the supplier.
+10. **Delay:** expected completion date is later than the due date.
+11. **Status moved backwards**, e.g. from `Completed` to `In production`.
+
+### Import rules
+
+- **Nothing is written to the database without approval.**
+- An import is approved or rejected **as a whole**. Rejected rows are never imported, even when the import is approved.
+- **Only one pending import per supplier at a time.** Uploading a new file while another import from the same supplier is waiting is blocked, with a message asking the user to approve or reject the pending import first.
+- Every approved or rejected import is logged with date, file, user and result.
 
 ## Who This Serves
 
-**Primary users:**
-- **Project and production personnel** need a quick overview of where jobs are and whether anything requires attention.
-- **Engineering personnel** need to identify problems related to drawings, revisions, or production requirements.
+**Primary user in v1:**
+- **Production planner** (one internal role). Creates jobs, exports and imports Excel files, approves imports, registers new drawing revisions, and follows up from the dashboard.
 
-**Secondary users:**
-- **Quality and inspection personnel** need to see which jobs are ready for inspection and record inspection results.
-- **External suppliers** need a simple way to provide production updates and report problems without accessing the company's internal systems.
+In practice several internal employees may use PTS, but v1 has **one internal user** to keep the system simple. **No login** in v1; the system records a fixed user name on every approval so the import log remains traceable.
 
-Success means employees can quickly answer a basic question: *"Where is this job, and is there anything we need to act on?"*
+**Indirect user:**
+- **External suppliers** never access PTS. They only receive and return the Excel file.
+
+**Later versions:** project and engineering personnel, and quality and inspection personnel, as separate roles.
+
+Success means the internal user can quickly answer a basic question: *"Where is this job, and is there anything we need to act on?"*
 
 ## Success Criteria
 
-**User success signals:**
-- An employee can answer "where is this job, and is there anything to act on?" from the dashboard alone, without emailing or calling anyone — target: under 1 minute per job. *[target to confirm with users]*
-- Internal reviewers can see exactly what changed in a supplier's Excel return before approving it, with zero unreviewed writes to the database.
-- Drawing revision mismatches are flagged by the system before they cause a production error, not discovered after the fact.
+All criteria below can be checked by testing v1.
 
-**Business objectives:**
-- Reduce time spent on manual status follow-up (email/phone) with suppliers and between departments by *[target, e.g. 50%]*. *[target to confirm with stakeholders]*
-- Reduce production errors or rework caused by using an outdated drawing revision or status to *[target, e.g. near zero per quarter]*. *[target to confirm with stakeholders]*
-- All supplier data imports are validated and require internal approval before reaching the database — 100% of imports, no exceptions.
+1. A job can be created and is shown on the dashboard with all fields listed under "What the system shows per job".
+2. An Excel file can be downloaded for one supplier, containing only that supplier's open jobs, with a unique Export ID and the current revision of each job.
+3. An uploaded file is validated, and every rejected row is shown with an understandable error message that names the rule that was broken.
+4. Before approval, the user can see exactly what changed per job compared to the database.
+5. **No import ever changes the database before it is approved** — verified by tests.
+6. A file reporting an older revision than the job's current revision is flagged as a revision mismatch.
+7. A job whose expected completion date is later than its due date is flagged as delayed on the dashboard.
+8. Uploading a second file for a supplier with a pending import is blocked with a clear message.
+9. From the dashboard alone, the user can find all jobs that are on hold, ready for inspection, delayed, or affected by a new revision.
 
-*Note: the bracketed targets above are placeholders — replace with real numbers once baseline data (current follow-up time, current error rate) is available.*
+### Test files
+
+The repository includes example Excel files with expected results, used both in automated tests and by anyone trying the app:
+
+| File | Content | Expected result |
+|---|---|---|
+| `valid.xlsx` | Correct updates for several jobs | All rows accepted, changes shown |
+| `invalid-status.xlsx` | Unknown status, On hold without reason | Rows rejected with error messages |
+| `revision-mismatch.xlsx` | Old revision for a job with a newer revision in PTS | Row flagged as revision mismatch |
+| `missing-fields.xlsx` | Ready for inspection without type, invalid quantity | Rows rejected with error messages |
+| `locked-field-changed.xlsx` | Supplier changed due date and description | Rows flagged as unexpected change |
 
 ## Scope
 
-The first version covers **job tracking end to end through the supplier Excel exchange**: creating and viewing jobs, sending controlled Excel files to suppliers, validating and reviewing what comes back, and giving internal staff a single dashboard to see status and open issues. It does not touch drawings, quality decisions, or any other company system directly.
+### In v1
 
-**Out of scope:**
+- Job register: create, view and edit jobs, including registering a new drawing revision manually
+- Excel export per supplier, using the fixed template
+- Excel import with validation, change view, warnings and rejected rows
+- Approval or rejection of a whole import, with an import log
+- Dashboard with job status, open issues, delays, inspection requests and revision warnings
+- Inspection **requests** from suppliers (before painting / final) shown on the dashboard
+- Seed data and example Excel files with fictional data, so the app can be run and tried locally
+
+### Out of scope for v1
+
+- Recording inspection results, delivery, internal assembly and final approval
+- Multiple roles and login
+- Revision history
+- Approving or rejecting individual rows in an import
+- Sending email or integrating with shared folders — file transfer is manual
 - Replacing the company's ERP, PDM, PLM, MES, or quality systems
 - Storing engineering drawings as the authoritative source
 - Automatically approving technical or quality decisions
 - Giving suppliers direct access to the internal network
 - Becoming a complete warehouse, logistics, or financial system
 
-PTS is primarily an information and tracking tool that helps employees maintain an accurate overview and identify problems early — not a system of record for engineering or finance.
+PTS is an information and tracking tool that helps the internal user maintain an accurate overview and identify problems early — not a system of record for engineering or finance.
 
 ## Vision
 
@@ -96,6 +199,35 @@ The long-term vision is a practical production tracking system that follows a jo
 
 **Engineering → Supplier Production → Inspection → Delivery → Internal Assembly → Final Approval**
 
-The system should give project, engineering, production, and quality personnel a shared view of progress and outstanding issues, without duplicating the company's existing ERP, PDM, or quality systems.
+Possible later steps:
 
-It should remain simple and focused: helping people make better decisions by providing the right production information at the right time.
+- Several internal users with **Windows / Microsoft Entra ID sign-in**, and separate roles for project, engineering, production and quality personnel
+- Recording inspection results, delivery and internal assembly
+- Automatic notification of project manager and job owner when a drawing revision changes
+- Approving individual rows in an import
+- Measuring business effects, such as less time spent on manual follow-up with suppliers and fewer errors caused by outdated drawing revisions, once baseline numbers are available
+
+The system should remain simple and focused: helping people make better decisions by providing the right production information at the right time, without duplicating the company's existing ERP, PDM, or quality systems.
+
+## Change Log
+
+### Version 2 — 2026-11-07
+
+Updated after feedback from the IBE160 lecturer (2026-10-06) on version 1 (commit `cb4be4a`).
+
+| Change | Reason (feedback) |
+|---|---|
+| Success criteria rewritten as nine testable, functional criteria; business targets with placeholders moved to the Vision | Placeholder business goals could not be measured in the course |
+| Added the Excel template with locked and editable columns, production statuses, On hold reasons and inspection types | The import is the core of the app and needed concrete rules |
+| Added validation rules: six that reject a row and five that give a warning, plus import rules | Revision mismatch and unexpected change had to be defined |
+| Defined how revision mismatches arise: the user registers a new revision manually, and PTS stores only the current revision | Same as above |
+| Added a rule allowing only one pending import per supplier, and approval of whole imports | Conflicts between two imports for the same job had to be described |
+| Narrowed v1 to one internal user (production planner) with no login; Windows / Entra ID sign-in moved to the Vision | Users, roles and login had to be decided for v1 |
+| Narrowed v1 to the core flow; inspection results, delivery and internal assembly moved out of scope | Scope risk for the semester |
+| Clarified that file transfer (email or shared folder) happens outside PTS | "Sending" Excel files should mean downloading a file, not sending email |
+| Described the internal user's workflow step by step | The Solution section should describe the user experience |
+| Stated that all data is fictional, and added five example test files with expected results | Security and testability |
+
+### Version 1 — commit `cb4be4a`
+
+First version of the product brief.
