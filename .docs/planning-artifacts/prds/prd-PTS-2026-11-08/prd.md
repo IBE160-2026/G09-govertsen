@@ -102,7 +102,8 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
   2. She filters on *On hold*, then on *Ready for inspection*, then on *Delayed*, then on *New revision or revision mismatch*.
 - **Climax:** she has a short list of jobs to act on without opening any Excel file.
 - **Resolution:** she books an inspection before painting for PTS-0004 and follows up the delayed jobs.
-- Realized by FR-23 … FR-25.
+- **Edge case:** the supplier phones and says the missing material for PTS-0003 has arrived. Ingrid sets the job back to *In production* as a manual update. The change is recorded in the job history with her name, and a pending import containing PTS-0003 gets W14.
+- Realized by FR-23 … FR-25, FR-28.
 
 **UJ-5. Two returned files for the same supplier wait at the same time.**
 - **Entry state:** Supplier Alpha returned a file on Monday, which is still pending, and a corrected file on Tuesday.
@@ -122,7 +123,7 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Drawing number** — identifier of the engineering drawing the job is produced from. The drawing itself lives outside PTS.
 - **Current revision** — the drawing revision the job must be produced to, as registered in PTS. PTS stores only the current revision, not a history.
 - **New-revision mark** — a flag on a job set when the production planner changes its current revision, and cleared when a supplier file containing the job has been generated.
-- **Open job** — a job whose production status is not `Completed`. `[ASSUMPTION]`
+- **Open job** — a job whose production status is not `Completed`. Jobs are not closed manually in v1.
 - **Production status** — one of `Not started`, `In production`, `On hold`, `Ready for inspection`, `Completed`.
 - **On hold reason** — one of `Drawing issue`, `Missing material`, `Check requested`, `Other`. Required when the production status is `On hold`.
 - **Inspection request** — a supplier's request for inspection, given by production status `Ready for inspection` plus an inspection type: `Before painting` or `Final`.
@@ -138,6 +139,8 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Change view** — the screen showing, for one import, what would change per job compared to the database, plus rejected rows and warnings.
 - **Approve / Reject** — the production planner's decision on a whole import.
 - **Import log** — the permanent record of every approved or rejected import.
+- **Manual update** — a change the production planner makes by hand to a job's supplier-reported fields, for example after a phone call with the supplier. Recorded in the job history.
+- **Job history** — the permanent record, per job, of every change to its supplier-reported fields, each linked to either an import log entry or a manual update.
 - **Dashboard** — the main overview of jobs, with flags and filters.
 - **Delayed** — a job whose expected completion date is later than its due date.
 - **Revision mismatch** — warning W8: the revision in the supplier file differs from the job's current revision.
@@ -146,7 +149,7 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 
 ### 4.1 Job Register
 
-**Description:** The production planner creates, views and edits jobs, and manages the list of suppliers. The job fields in the app are the same as the columns in the supplier file, so what the planner sees and what the supplier sees match. Whether the register is a spreadsheet-like table or a table with a separate form is left to UX. Supplier-reported fields are shown but not edited by hand. They change only through an approved import, so every change to them can be traced to the import log. `[ASSUMPTION]` Realizes UJ-1, UJ-3.
+**Description:** The production planner creates, views and edits jobs, and manages the list of suppliers. The job fields in the app are the same as the columns in the supplier file, so what the planner sees and what the supplier sees match. Whether the register is a spreadsheet-like table or a table with a separate form is left to UX. Supplier-reported fields change through an approved import, or through a manual update when the planner learns something outside the file, for example by phone. Both are recorded in the job history, so every change can be traced. Realizes UJ-1, UJ-3, UJ-4.
 
 **Functional Requirements:**
 
@@ -167,7 +170,7 @@ The production planner can view all fields of a job and edit drawing number, des
 
 **Consequences (testable):**
 - The job view shows every field listed in FR-23.
-- Supplier-reported fields are read-only in the job view. `[ASSUMPTION]`
+- Supplier-reported fields are changed through FR-28, not through this form.
 - Quantity cannot be set below the job's current completed quantity.
 
 #### FR-3: Register a new revision
@@ -192,6 +195,16 @@ The production planner can create a supplier with a name and see the list of sup
 #### FR-5: Job states visible in the register
 
 The job register shows, per job, the flags defined in FR-24, so the planner can see them from the job view as well as from the dashboard.
+
+#### FR-28: Manual update of supplier-reported fields
+
+The production planner can change a job's supplier-reported fields by hand, as a manual update. Realizes UJ-4.
+
+**Consequences (testable):**
+- The same rules as for imported rows apply (R1–R5). A manual update breaking a rule cannot be saved, and the rule ID and message are shown.
+- Every manual update is recorded in the job history with date and time, user name (FR-22), field, old value and new value.
+- A manual update counts like an approved import for pending imports: pending imports containing the job are recalculated, and the affected rows get W14 (FR-20).
+- The job history of a job lists manual updates and approved imports in time order.
 
 ### 4.2 Supplier File Generation
 
@@ -290,6 +303,7 @@ A row is rejected, and never applied, when:
 - Each rejected row shows the Job ID, the rule ID and an understandable message (e.g. "R2: Status is On hold, but no reason is given").
 - A row breaking several rules lists all of them.
 - An empty expected completion date is allowed and means "not given". `[ASSUMPTION]`
+- For R5, PTS accepts real Excel dates and dates written as text in the formats `dd.mm.yyyy` and `yyyy-mm-dd`. Any other text is rejected. `[ASSUMPTION]` on the two formats.
 
 #### FR-14: Warning rules (W8–W14)
 
@@ -299,9 +313,9 @@ A row (or the whole file, for W9) gets a warning, but is still applied on approv
 - **W9 Outdated file** — a newer export exists for the same supplier. Applies to the whole import.
 - **W10 Unexpected change** — a value in a locked column differs from the value in the export.
 - **W11 Delay** — expected completion date is later than the due date.
-- **W12 Status moved backwards** — the new production status is earlier in the order *Not started → In production / On hold → Ready for inspection → Completed*. `[ASSUMPTION]` on the order.
+- **W12 Status moved backwards** — the new production status is earlier in the order *Not started → In production / On hold → Ready for inspection → Completed*.
 - **W13 Missing job** — an open job that was in the export is missing from the file. The job is left unchanged.
-- **W14 Job changed since upload** — another import that changed this job was approved after this file was uploaded (FR-20).
+- **W14 Job changed since upload** — after this file was uploaded, the job was changed by another approved import or a manual update (FR-20, FR-28).
 
 **Consequences (testable):**
 - Each warning shows its rule ID and a message naming the old and new value where relevant.
@@ -358,7 +372,7 @@ Several pending imports may exist at once, also for the same supplier and the sa
 
 #### FR-20: Recalculate after approval
 
-When an import is approved, every other pending import containing one or more of the same jobs is recalculated against the updated database. Realizes UJ-5.
+When an import is approved, or a manual update is saved (FR-28), every pending import containing one or more of the same jobs is recalculated against the updated database. Realizes UJ-5.
 
 **Consequences (testable):**
 - The change view of those imports shows old values from the updated database.
@@ -450,8 +464,8 @@ The repository includes example supplier files with documented expected results.
 
 ## 5. Cross-Cutting Non-Functional Requirements
 
-- **NFR-1 Data integrity.** Job data changes only through FR-1 to FR-4 or an approved import (FR-18). Approval is all-or-nothing.
-- **NFR-2 Traceability.** Every change to supplier-reported fields can be traced to one import log entry.
+- **NFR-1 Data integrity.** Job data changes only through FR-1 to FR-4, a manual update (FR-28) or an approved import (FR-18). Approval is all-or-nothing.
+- **NFR-2 Traceability.** Every change to supplier-reported fields can be traced, through the job history, to one import log entry or one manual update.
 - **NFR-3 Runnable locally.** PTS runs on a single developer machine from the README. It needs no paid services, external accounts or the team's own keys, and has a local database, seed data and example files.
 - **NFR-4 Safe file handling.**
   - Only `.xlsx` files are accepted. Macro-enabled files (`.xlsm`) are rejected by F1.
@@ -463,7 +477,7 @@ The repository includes example supplier files with documented expected results.
 - **NFR-7 Testability.** Every validation rule (F1–F4, R1–R7, W8–W14) and FR-17 are covered by automated tests.
 - **NFR-8 Fictional data only.** No real company data, drawings or supplier names in the repository, seed data or example files.
 - **NFR-9 Platform.** A desktop web application, used in a current version of Chrome or Edge. Mobile is not supported in v1. `[ASSUMPTION]`
-- **NFR-10 Language.** The user interface and the supplier file are in English, matching the template. `[ASSUMPTION]`
+- **NFR-10 Language.** The user interface is in Norwegian in v1. The supplier file stays in English, because its column names are part of the fixed template checked by F2. `[ASSUMPTION]` on the supplier file. The PRD, code and documentation are in English, so UX defines the Norwegian labels for the Glossary terms.
 
 ## 6. Non-Goals (Explicit)
 
@@ -479,7 +493,7 @@ The repository includes example supplier files with documented expected results.
 
 ### 7.1 In Scope (v1)
 
-- Job register with manual registration of new revisions, and minimal supplier management (§4.1)
+- Job register with manual registration of new revisions, manual updates with job history, and minimal supplier management (§4.1)
 - Supplier file generation per supplier with the fixed template, pre-filled values, dropdowns and new-revision marking (§4.2)
 - Import with file checks, row validation, warnings and change view (§4.3)
 - Approval or rejection of whole imports, several pending imports, recalculation and import log (§4.4)
@@ -493,7 +507,6 @@ The repository includes example supplier files with documented expected results.
 - Revision history — PTS stores only the current revision.
 - Approving or rejecting individual rows in an import — later versions.
 - Automatic notification of project manager and job owner on revision changes — later versions.
-- Editing supplier-reported fields by hand — they change only via imports in v1. `[ASSUMPTION]`
 
 ## 8. Success Metrics
 
@@ -516,6 +529,7 @@ The v1 success criteria are functional and checked by tests and a demo run. SM-N
 **Secondary**
 - **SM-13** — All eight example files produce their expected result in the automated tests. Validates FR-27, NFR-7.
 - **SM-14** — The examiner can run PTS and complete UJ-1 and UJ-2 from the README alone. Validates NFR-3.
+- **SM-15** — Every change to a job's supplier-reported fields appears in its job history, linked to an import or a manual update. Validates FR-28, NFR-2.
 
 **Counter-metrics (do not optimize)**
 - **SM-C1** — Do not reduce the number of warnings shown in order to make imports look clean. Warnings are the point. Counterbalances SM-3 and SM-4.
@@ -530,22 +544,25 @@ The v1 success criteria are functional and checked by tests and a demo run. SM-N
 ## 10. Open Questions
 
 1. **Job register layout** — spreadsheet-like table with inline editing, or a table with a separate form? Owner: Radmila, decided in `bmad-ux`.
-2. **Editing supplier-reported fields by hand** — should the planner be able to correct a status reported by phone, and how would that be logged? Assumed *no* for v1.
-3. **Closing jobs** — is "open" simply "not Completed", or does the planner need to close jobs manually, for example after delivery?
-4. **Accepted date formats** — should PTS accept dates typed as text (e.g. `08.11.2026`) in addition to real Excel dates?
-5. **Interface language** — English throughout, or a Norwegian interface with an English supplier file?
+2. **Supplier file language** — should the supplier file later also be available in Norwegian? That would need a second template that F2 recognizes. Assumed English only for v1.
+
+**Resolved 2026-11-08:**
+- Manual updates of supplier-reported fields are possible (FR-28).
+- An open job is a job that is not `Completed`.
+- Dates written as text are accepted.
+- The interface is in Norwegian.
+- The status order for W12 is confirmed.
 
 ## 11. Assumptions Index
 
 - §3 / FR-1 — Job ID is generated by PTS.
-- §3 / FR-25 — An open job is a job not `Completed`, and the dashboard shows open jobs by default.
-- §4.1 / FR-2 / §7.2 — Supplier-reported fields are read-only in the app and change only via imports.
+- FR-25 — The dashboard shows open jobs by default.
 - FR-4 — The planner can create suppliers. Minimal supplier management is needed.
 - FR-7 — Sheet protection without password. Instructions sheet in English.
-- FR-13 — An empty expected completion date is allowed.
-- FR-14 — Order of statuses for W12. Locked-column changes are never applied.
+- FR-13 — An empty expected completion date is allowed. Text dates accepted in `dd.mm.yyyy` and `yyyy-mm-dd`.
+- FR-14 — Locked-column changes are never applied.
 - FR-24 — Revision mismatch flag is based on the last approved import for the job.
 - NFR-4 — 5 MB upload limit. Uploaded files kept as long as the import and log need them.
 - NFR-5 — 200 rows in under 5 seconds.
 - NFR-9 — Desktop, Chrome or Edge.
-- NFR-10 — English interface and supplier file.
+- NFR-10 — Supplier file stays in English while the interface is Norwegian.
