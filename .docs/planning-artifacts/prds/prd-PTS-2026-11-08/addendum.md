@@ -39,38 +39,81 @@ These are not decisions. `bmad-architecture` decides them.
 - Keep the architecture simple: one web app and one local database (lecturer feedback, criterion 5).
 - FR-17 / NFR-1 suggest two storage areas:
   - **Staging:** imports and their rows, with validation results.
-  - **Job data:** changed only inside the approval transaction.
-- FR-20 means the change view should be computed from the stored file rows against current job data, not stored once at upload. For the import log (FR-21), the change view is frozen at decision time.
-- **Exports must be stored with the values they contained.** Three rules depend on that:
-  - W10 compares locked columns against the export, not against current job data.
+  - **Job data:** changed only inside the approval transaction, by a manual update, or by a job register edit.
+- **Three values per editable cell.** FR-8, FR-15, W14 and W15 need three values for each editable cell:
+  - **E**, the exported value, stored in the export
+  - **D**, the current value in job data
+  - **F**, the value in the returned file
+
+  | Case | Meaning | Change view | On approval |
+  |---|---|---|---|
+  | F = E | Supplier did not touch the cell | *No change*, or *kept* with W14/W15 if D ≠ E | Not applied |
+  | F ≠ E, F = D | Supplier changed it to what PTS already has | *No change* | Nothing to apply |
+  | F ≠ E, F ≠ D, D = E | Normal supplier update | D → F | F applied |
+  | F ≠ E, F ≠ D, D ≠ E | Supplier changed it, and so did someone else after the export | D → F, with W14 (import) or W15 (manual update) | F applied (the file wins) |
+
+- **Why the job history matters:** W14 and W15 need to know *what* changed D after the export, an import or a manual update. The job history (FR-5, FR-28) gives that.
+- **Always current (FR-20):** compute the validation result and change view from the stored file rows against current job data each time they are shown, not once at upload. For the import log (FR-21), freeze the change view at decision time.
+- **Exports must be stored with every value they contained.** Rules that depend on that:
+  - W10 compares locked columns with the export.
   - W13 needs the list of jobs in the export.
-  - W9 needs export order per supplier.
-- A repository folder for example files and seed data (lecturer feedback, criterion 7), e.g. `testdata/`.
+  - W9 needs the export order per supplier.
+  - W14, W15 and FR-8 need the exported values (E).
+- **Mapping values:** the file uses Norwegian values (PRD §3.1), and storage uses English enums. One mapping table serves export, import (R1) and the UI.
+- **Repository layout (NFR-11):** `testdata/` for example files and seed data. `.gitignore` covers the local database, uploads and generated supplier files.
 
 ## A3. Change View Sketch (low fidelity)
 
-The lecturer asked for a sketch of how changes and errors are shown before approval. This is an input for `bmad-ux`, not a design. Labels are shown in English here, and the real screen uses the Norwegian labels in PRD §3.1.
+The lecturer asked for a sketch of how changes and errors are shown before approval. This is an input for `bmad-ux`, not a design. Labels and values are in Norwegian, as on the real screen.
 
 ```
-Import #12 · Supplier Alpha (fictional) · EXP-20261108-0001 · uploaded 2026-11-10 09:14
-Status: PENDING                          [ Reject import ]  [ Approve import ]
-⚠ W9 Outdated file: a newer export (EXP-20261109-0002) exists for this supplier.
+Import #12 · Leverandør Alfa (fiktiv) · EXP-20261108-0001 · lastet opp 10.11.2026 09:14
+Status: VENTER                            [ Avvis import ]  [ Godkjenn import ]
+⚠ W9 Utdatert fil: det finnes en nyere eksport (EXP-20261109-0002) for denne leverandøren.
 
-Summary: 3 changed · 1 unchanged · 1 rejected row · 2 warnings
-Filter: [All] [Changed] [Rejected] [Warnings]
+Oppsummering: 3 endret · 1 uendret · 1 avvist rad · 3 advarsler
+Filter: [Alle] [Endret] [Avvist] [Advarsler]
 
-Job       Field                 Database        File
-PTS-0001  Completed quantity    4               8
-          Expected completion   2026-12-01      2026-12-03
-PTS-0002  ⚠ W8 Revision mismatch: file reports B, current revision is C
-          Production status     Not started     In production
-PTS-0003  Production status     In production   On hold
-          On hold reason        –               Missing material
-          ⚠ W11 Delay: expected 2026-12-09 is later than due date 2026-11-27
-PTS-0004  ✖ R3 Ready for inspection, but no inspection type given — row will not be imported
-PTS-0005  No change
+Jobb      Felt                  I PTS nå        I fila
+PTS-0001  Antall ferdig         4               8
+          Forventet ferdigdato  01.12.2026      03.12.2026
+PTS-0002  ⚠ W8 Revisjonsavvik: fila har revisjon B, gjeldende revisjon er C
+          Produksjonsstatus     Ikke startet    I produksjon
+PTS-0003  Produksjonsstatus     I produksjon    Stoppet        ← beholdes: I produksjon
+          ⚠ W15 Konflikt med manuell oppdatering 10.11.2026 (Ingrid). Leverandøren har
+            ikke endret cellen. PTS-verdien beholdes ved godkjenning.
+          Forventet ferdigdato  01.12.2026      09.12.2026
+          ⚠ W11 Forsinket: 09.12.2026 er etter fristen 27.11.2026
+PTS-0004  ✖ R3 Klar for inspeksjon, men inspeksjonstype mangler. Raden importeres ikke.
+PTS-0005  Ingen endring
 ```
 
 ## A4. Rule ID Mapping
 
-The brief numbers its rules 1–14 plus F1–F4. The PRD keeps those numbers and adds a letter for the kind of rule. R = rejection (rules 1–7) and W = warning (rules 8–14). For example, brief rule 8 is PRD W8.
+The brief numbers its rules 1–15 plus F1–F4. The PRD keeps those numbers and adds a letter for the kind of rule. R = rejection (rules 1–7) and W = warning (rules 8–15). For example, brief rule 8 is PRD W8.
+
+## A5. Screens and Dashboard Sketch (low fidelity)
+
+Screens v1 needs. The names are for UX to confirm.
+
+| Screen | Purpose | FRs |
+|---|---|---|
+| Dashboard (*Oversikt*) | All jobs, flags, filters | FR-23 … FR-25 |
+| Job detail (*Jobb*) | One job: fields, flags, last export, job history. Edit, new revision, manual update, close/reopen | FR-2, FR-3, FR-5, FR-28, FR-29 |
+| New job (*Ny jobb*) | Create a job | FR-1 |
+| Suppliers (*Leverandører*) | List of suppliers. Generate supplier file per supplier | FR-4, FR-6 |
+| Import (*Importer*) | Upload a file, list pending imports | FR-11, FR-19 |
+| Change view (*Endringsvisning*) | Review, approve or reject one import | FR-15, FR-18 |
+| Import log (*Importlogg*) | Decided imports and their frozen change views | FR-21 |
+
+```
+PTS · Oversikt                                     [ + Ny jobb ]  [ Importer fil ]
+Filter: [Stoppet 3] [Klar for inspeksjon 1] [Forsinket 2] [Ny revisjon / avvik 2]
+Leverandør: [Alle ▾]   ☐ Vis lukkede jobber                    Sortering: Frist ▲
+
+Jobb      Tegning      Rev  Beskrivelse        Lev.   Status               Ferdig  Frist       Forventet   Flagg
+PTS-0004  DRW-10004    A    Dekkplate          Alfa   Klar for insp. (FM)  20/20   20.11.2026  19.11.2026  🔍
+PTS-0003  DRW-10003    A    Sveiset ramme      Alfa   I produksjon          0/2    27.11.2026  09.12.2026  ⏰ 💬
+PTS-0001  DRW-10001    B    Brakett            Alfa   I produksjon          4/12   04.12.2026  01.12.2026
+PTS-0002  DRW-10002    C    Akselhus           Alfa   Ikke startet          0/4    11.12.2026  –           🆕 Send ny fil
+```

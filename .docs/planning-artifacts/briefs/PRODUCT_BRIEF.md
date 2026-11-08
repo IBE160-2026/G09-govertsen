@@ -48,8 +48,13 @@ PTS gives the internal user one overview of production jobs and their current st
 3. **Send the file to the supplier** by email or through a shared folder. This transfer happens outside PTS and is done manually.
 4. **Receive the updated file** from the supplier (email or shared folder) and **upload it** to PTS.
 5. **Review the import.** PTS validates every row and shows, per job, what changed compared to the database, which rows were rejected and why, and which rows carry warnings.
-6. **Approve or reject the whole import.** Only after approval is the database updated.
+6. **Approve or reject the whole import.** Only after approval is the database updated with the file's contents.
 7. **Follow up** from the dashboard: jobs on hold, ready for inspection, delayed, or affected by a new drawing revision.
+8. **Record phone calls.** When a supplier phones in a change, the user records it as a **manual update** of the supplier-reported fields. Every manual update is stored in the job's history with date, user, old and new value.
+
+A job **closes** automatically when its status becomes `Completed`. The user can also close a job by hand, for example when an order is cancelled, and reopen it. Only open jobs are included in supplier files.
+
+**Language:** everything users and suppliers see is in Norwegian, including the Excel file's column names, values and instructions. This brief, the PRD and the code are in English. The Norwegian labels are listed in the PRD (§3.1).
 
 ### Drawing revisions
 
@@ -65,7 +70,7 @@ PTS stores only the **current** revision of each job, not a revision history. Th
 
 ## The Excel File
 
-Each export is a fixed template with locked and editable columns.
+Each export is a fixed template with locked and editable columns. The column names and values are shown in English here, and the file itself uses Norwegian labels.
 
 ### Locked columns (visible to the supplier, not to be changed)
 
@@ -90,7 +95,7 @@ Each export is a fixed template with locked and editable columns.
 | On hold reason | `Drawing issue`, `Missing material`, `Check requested`, `Other` (required when status is `On hold`) |
 | Inspection type | `Before painting`, `Final` (required when status is `Ready for inspection`) |
 | Completed quantity | Whole number from 0 to ordered quantity |
-| Expected completion date | Valid date |
+| Expected completion date | Valid date (real Excel date, or text as `dd.mm.yyyy` or `yyyy-mm-dd`) |
 | Comment / issue description | Free text (required when On hold reason is `Other`) |
 
 **Dropdowns:** Production status, On hold reason and Inspection type are dropdown lists in the Excel file (Excel data validation), so the supplier picks from the allowed values instead of typing them. Completed quantity and Expected completion date use Excel data validation for whole numbers and dates. Because suppliers can still paste values or use other spreadsheet programs, PTS validates every row on import regardless of the dropdowns.
@@ -136,13 +141,15 @@ Every uploaded file is first checked as a whole, then every row is checked again
 11. **Delay:** expected completion date is later than the due date.
 12. **Status moved backwards**, e.g. from `Completed` to `In production`.
 13. **Missing job:** an open job that was included in the export is missing from the uploaded file. The job is left unchanged.
-14. **Job changed since upload:** another import that updated this job was approved after this file was uploaded (see import rules).
+14. **Job changed by another import:** after the export, another approved import changed a field of this job, and this file changes the same field to a different value.
+15. **Conflict with manual update:** after the export, the user changed a field of this job by a manual update, and the file's value for that field differs from it. The planner clears this up with the supplier before deciding.
 
 ### Import rules
 
 - **Nothing is written to the database without approval.**
 - An import is approved or rejected **as a whole**. Rejected rows are never imported, even when the import is approved.
-- **Several pending imports are allowed**, also for the same supplier. When one import is approved, the change view of every other pending import that contains the same jobs is recalculated against the updated database, and the affected rows get warning 14. The user always approves against the current database, so the last approved import wins.
+- **Only cells the supplier changed are applied.** A cell whose value equals the value in the export is never applied, so an old, untouched value cannot undo newer information, such as a manual update. When the supplier did change a cell, the file wins on approval, also over a manual update. Warnings 14 and 15 show such conflicts before approval.
+- **Several pending imports are allowed**, also for the same supplier. Every pending import is always shown against the current database, so the user never approves against stale values.
 - Every approved or rejected import is logged with date, file, user and result.
 
 ## Who This Serves
@@ -150,7 +157,7 @@ Every uploaded file is first checked as a whole, then every row is checked again
 **Primary user in v1:**
 - **Production planner** (one internal role). Creates jobs, exports and imports Excel files, approves imports, registers new drawing revisions, and follows up from the dashboard.
 
-In practice several internal employees may use PTS, but v1 has **one internal user** to keep the system simple. **No login** in v1; the system records a fixed user name on every approval so the import log remains traceable.
+In practice several internal employees may use PTS, but v1 has **one internal user** to keep the system simple. **No login** in v1; the system records a fixed user name on every approval, rejection and manual update so the import log and job history remain traceable.
 
 **Indirect user:**
 - **External suppliers** never access PTS. They only receive and return the Excel file.
@@ -170,7 +177,7 @@ All criteria below can be checked by testing v1.
 5. **No import ever changes the database before it is approved** — verified by tests.
 6. A file reporting an older revision than the job's current revision is flagged as a revision mismatch.
 7. A job whose expected completion date is later than its due date is flagged as delayed on the dashboard.
-8. When two pending imports contain the same job and one is approved, the other import's change view is recalculated against the updated database and the affected rows are flagged as *job changed since upload*.
+8. When two pending imports contain the same job and one is approved, the other import shows the updated values, and is flagged as *job changed by another import* where it would overwrite them.
 9. From the dashboard alone, the user can find all jobs that are on hold, ready for inspection, delayed, or affected by a new revision.
 10. In an exported file, Production status, On hold reason and Inspection type are dropdown lists containing only the allowed values.
 11. A job with a new revision is marked in the dashboard and in the next export to its supplier, and the dashboard mark disappears once that export has been downloaded.
@@ -195,13 +202,16 @@ The repository includes example Excel files with expected results, used both in 
 
 ### In v1
 
-- Job register: create, view and edit jobs, including registering a new drawing revision manually
+- Job register: create, view and edit jobs, register a new drawing revision manually, record manual updates with a job history, and close and reopen jobs
 - Excel export per supplier, using the fixed template with dropdown lists and new revisions marked
 - Excel import with file checks, row validation, change view, warnings and rejected rows
 - Approval or rejection of a whole import, with several pending imports allowed and an import log
 - Dashboard with job status, open issues, delays, inspection requests and a clear new-revision mark
 - Inspection **requests** from suppliers (before painting / final) shown on the dashboard
 - Seed data and example Excel files with fictional data, so the app can be run and tried locally
+- A Norwegian user interface and supplier file
+
+The PRD divides v1 into **Core** (create job → export → import → change view → approve → dashboard), which must be finished and stable first, and **Extension** (manual updates, closing jobs, supplier management and some warnings).
 
 ### Out of scope for v1
 
@@ -235,6 +245,21 @@ Possible later steps:
 The system should remain simple and focused: helping people make better decisions by providing the right production information at the right time, without duplicating the company's existing ERP, PDM, or quality systems.
 
 ## Change Log
+
+### Version 4 — 2026-11-08
+
+Updated while writing the PRD (`.docs/planning-artifacts/prds/prd-PTS-2026-11-08/prd.md`, §0.1), so that the brief and the PRD agree.
+
+| Change | Reason |
+|---|---|
+| The user can record manual updates of supplier-reported fields, stored in a job history (workflow step 8) | Suppliers often phone in changes |
+| New warning 15, *Conflict with manual update*. Warning 14 redefined as *Job changed by another import* | Conflicts between a returned file and newer information must be visible so they can be cleared up |
+| Only cells the supplier changed are applied. Where the supplier did change a cell, the file wins | Untouched, old values must not undo newer information |
+| Jobs close automatically when `Completed`, and can be closed and reopened by hand | Cancelled or wrongly created jobs need an exit |
+| Everything users and suppliers see is in Norwegian | Users and suppliers are Norwegian |
+| Text dates accepted in `dd.mm.yyyy` and `yyyy-mm-dd` | Suppliers type dates in different ways |
+| v1 divided into Core and Extension | Lecturer feedback: finish the core flow first |
+| Success criterion 8 reworded to match warning 14 | Consistency |
 
 ### Version 3 — 2026-11-08
 
