@@ -24,10 +24,11 @@ This PRD turns the PTS product brief into requirements that architecture, UX, ep
 **How to read it:**
 
 - **Glossary.** Every domain term is defined once in §3 and used verbatim everywhere else.
-- **Requirement IDs.** Features (§4) carry globally numbered requirements, FR-1 … FR-29. IDs are stable, so they are not renumbered when requirements are added.
+- **Requirement IDs.** Features (§4) carry globally numbered requirements, FR-1 … FR-30. IDs are stable and never renumbered. FRs are grouped by feature, so numbers are not always in order: FR-28 and FR-29 sit in §4.1, and FR-30 in §4.3. A range such as "FR-11 … FR-16" means those numbers only.
+- **Traceability.** The "Realized by" line of each user journey is the complete journey-to-FR mapping. "Realizes UJ-N" notes on FRs are shortcuts for the main journeys.
 - **Rule IDs.** Validation rules keep the IDs from the brief: F1–F4, R1–R7 and W8–W15. The same rule has the same ID in the brief, this PRD, the stories and the tests.
-- **Priority.** Every FR has a priority, **Core** or **Extension** (§7.1). Core is the flow that must be finished and stable first.
-- **Success metrics.** SM-1 … SM-12 correspond one-to-one to success criteria 1–12 in the brief.
+- **Priority.** Every FR has a priority, **Core** or **Extension** (§7.1). Core is the flow that must be finished and stable first: *create job → generate supplier file → import → change view → approve → dashboard*.
+- **Success metrics.** SM-1 … SM-12 correspond one-to-one to success criteria 1–12 in the brief. SM-13 … SM-16 and the counter-metrics SM-C1 and SM-C2 are added by this PRD.
 - **Assumptions.** Inferences not yet confirmed are tagged `[ASSUMPTION]` inline and listed in §11.
 - **Addendum.** Technical hints, template build details and screen sketches live in `addendum.md`.
 
@@ -35,7 +36,7 @@ This PRD turns the PTS product brief into requirements that architecture, UX, ep
 
 ### 0.1 Changes From Brief v3
 
-Decided with the project owner on 2026-11-08 while writing this PRD. The brief was updated to v4 to match.
+For reviewers comparing with brief v3. These were decided with the project owner on 2026-11-08 while writing this PRD, and the brief was updated to v4 to match.
 
 | Change | Where | Reason |
 |---|---|---|
@@ -47,6 +48,7 @@ Decided with the project owner on 2026-11-08 while writing this PRD. The brief w
 | Everything users and suppliers see is in Norwegian, including the supplier file. | NFR-10, §3.1 | Users and suppliers are Norwegian. |
 | Dates written as text are accepted, as well as real Excel dates. | FR-13 | Suppliers type dates in different ways. |
 | Requirements are prioritized as Core and Extension. | §7.1 | Lecturer feedback: finish the core flow first. |
+| The status order used by W12 is fixed. | FR-14 | Needed to decide what "backwards" means. |
 
 ## 1. Vision
 
@@ -66,13 +68,7 @@ v1 covers the supplier part of a longer flow. The long-term direction is a track
 
 **Engineering → Supplier Production → Inspection → Delivery → Internal Assembly → Final Approval**
 
-Possible later steps:
-
-- several internal users with Windows / Microsoft Entra ID sign-in, and separate roles for project, engineering, production and quality personnel
-- recording inspection results, delivery and internal assembly
-- automatic notification of the project manager and job owner when a drawing revision changes
-- approving individual rows in an import
-- measuring business effects once baseline numbers are available, such as less time spent on manual follow-up and fewer errors from outdated revisions
+The capabilities deferred from v1 are listed in §7.2. One more later step: measuring business effects once baseline numbers are available, such as less time spent on manual follow-up and fewer errors from outdated revisions.
 
 PTS should stay simple and focused, and should not duplicate ERP, PDM or quality systems.
 
@@ -99,7 +95,7 @@ PTS should stay simple and focused, and should not duplicate ERP, PDM or quality
 
 ### 2.4 Key User Journeys
 
-The persona is fictional: **Ingrid, production planner** at a marine engineering company, responsible for about 40 open jobs across five machining and welding suppliers. Screen labels are shown in English with the Norwegian label in italics where it helps.
+The persona is fictional: **Ingrid, production planner** at a marine engineering company, responsible for about 40 open jobs across five machining and welding suppliers. Screen labels are shown in English with the Norwegian label in italics where it helps. Terms such as *pending import*, *change view* and *supplier-changed cell* are defined in §3, and rule IDs (W8, W15 …) in §4.3.
 
 **UJ-1. Ingrid registers new jobs and sends Leverandør Alfa their file.**
 - **Entry state:** PTS is open in the browser on her desktop. There is no login in v1.
@@ -170,6 +166,8 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 
 ## 3. Glossary
 
+**Jobs and revisions**
+
 - **Job** — one production order placed with one supplier for one drawing. Has a Job ID, drawing number, current revision, description, quantity, supplier, due date and supplier-reported fields. Belongs to exactly one supplier.
 - **Job ID** — unique identifier of a job, generated by PTS (e.g. `PTS-0001`). `[ASSUMPTION]`
 - **Supplier** — an external workshop that produces jobs. Has a unique name and zero or more jobs.
@@ -177,17 +175,22 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Current revision** — the drawing revision the job must be produced to, as registered in PTS. PTS stores only the current revision, not a history.
 - **New-revision mark** — a flag on a job. It is set when the production planner changes the job's current revision, and cleared when a supplier file containing the job is generated.
 - **Open job** — a job that is not closed. Only open jobs are included in supplier files.
-- **Closed job** — a job that is closed, in one of two ways. It closes automatically when its production status becomes `Completed` through an approved import or a manual update. The production planner can also close it by hand, for example when an order is cancelled. The production planner can reopen a closed job.
+- **Closed job** — a job that is not open. It closes automatically on `Completed`, or by hand. FR-29 specifies closing and reopening.
 - **Production status** — one of `Not started`, `In production`, `On hold`, `Ready for inspection`, `Completed`. A new job is `Not started`, which covers both "not yet sent" and "sent, work not started". Whether a job has been sent is shown by its last export date.
 - **On hold reason** — one of `Drawing issue`, `Missing material`, `Check requested`, `Other`. Required when the production status is `On hold`.
 - **Inspection request** — a supplier's request for inspection, given by production status `Ready for inspection` plus an inspection type: `Before painting` or `Final`.
 - **Supplier-reported fields** — production status, on hold reason, inspection type, completed quantity, expected completion date and comment. The only fields an import or a manual update may change.
-- **Job register** — the screens where the production planner creates and edits jobs and sees a single job in detail, including its flags and job history. The dashboard is the overview across jobs.
+
+**Supplier file and export**
+
 - **Supplier file** — the `.xlsx` file PTS generates for one supplier, following the fixed template, with locked columns and editable columns.
 - **Export** — the stored record that a supplier file was generated: Export ID, export date, supplier, and every job and value the file contained.
 - **Export ID** — unique identifier of one export, printed in every row of the supplier file.
 - **Exported value** — the value a cell had in the supplier file when it was generated, as stored in the export.
 - **Supplier-changed cell** — an editable cell whose value in the returned file differs from its exported value. Only supplier-changed cells are applied on approval.
+
+**Import and validation**
+
 - **Import** — one uploaded supplier file, together with its validation result and change view. Has a state: `Pending`, `Approved` or `Rejected`.
 - **Pending import** — an import waiting for the production planner to approve or reject it. Several can exist at once, also for the same supplier.
 - **File check** — a check on the uploaded file as a whole (rules F1–F4). A failed file check rejects the file, and no import is created.
@@ -195,9 +198,16 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Warning** — a flag on a row or an import that does not stop it (W8–W15). Shown to the production planner before approval.
 - **Change view** — the screen showing, for one import, which supplier-changed cells would be applied (value in PTS → value in file), plus rejected rows and warnings.
 - **Approve / Reject** — the production planner's decision on a whole import.
+
+**Records**
+
 - **Import log** — the permanent record of every approved or rejected import.
 - **Manual update** — a change the production planner makes by hand to a job's supplier-reported fields, for example after a phone call with the supplier.
 - **Job history** — the permanent record, per job, of every change to its supplier-reported fields and every close or reopen. Each entry is linked to an import log entry or a manual update.
+
+**Screens and flags**
+
+- **Job register** — the screens where the production planner creates and edits jobs and sees a single job in detail, including its flags and job history. The dashboard is the overview across jobs.
 - **Dashboard** — the main overview of jobs, with flags and filters.
 - **Delayed** — a job whose expected completion date is later than its due date.
 - **Revision mismatch** — a returned supplier file reports a revision other than the job's current revision (warning W8). A job keeps the *Revision mismatch* flag as defined in FR-24.
@@ -313,7 +323,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 - Every manual update is recorded in the job history with date and time, user name (FR-22), field, old value and new value.
 - A pending import whose export was generated before the manual update shows W15 for the affected fields (FR-14).
 
-**Notes:** `[NOTE FOR PM]` A supplier-changed cell wins over a manual update when the import is approved (decided 2026-11-08). W15 is the only guard. This is accepted for v1. The planner can reject the import if in doubt.
+**Notes:** Accepted risk for v1: a supplier-changed cell wins over a manual update on approval, and W15 is the only guard. The planner rejects the import if in doubt (FR-14, FR-15).
 
 #### FR-29: Close and reopen a job
 
@@ -416,7 +426,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 
 **Priority: Core.** A row is rejected, and never applied, when:
 
-- **R1** — production status is not an allowed value.
+- **R1** — production status is not an allowed value, including a Norwegian value with no mapping (NFR-10).
 - **R2** — status is `On hold` without an on hold reason, or the reason is `Other` without a comment.
 - **R3** — status is `Ready for inspection` without an inspection type.
 - **R4** — completed quantity is not a whole number, is negative, or is greater than the job's quantity in PTS.
@@ -433,16 +443,16 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 
 #### FR-14: Warning rules (W8–W15)
 
-**Priority: Core for W8, W10 and W11. Extension for W9 and W12–W15.** A row, or the whole import for W9, gets a warning when one of the conditions below holds. Warnings do not stop approval.
+**Priority: per warning, as marked.** A row, or the whole import for W9, gets a warning when one of the conditions below holds. Warnings do not stop approval.
 
-- **W8 Revision mismatch** — the revision in the file differs from the job's current revision.
-- **W9 Outdated file** — a newer export exists for the same supplier. Applies to the whole import and is checked whenever the import is shown.
-- **W10 Unexpected change** — a value in a locked column differs from its exported value. Locked-column values are never applied.
-- **W11 Delay** — expected completion date is later than the due date.
-- **W12 Status moved backwards** — the file's production status comes earlier than the job's current status in the order *Not started → In production / On hold → Ready for inspection → Completed*.
-- **W13 Missing job** — an open job that was in the export is missing from the file. The job is left unchanged.
-- **W14 Job changed by another import** — after the export, another approved import changed a supplier-reported field of this job, and this file changes the same field to a different value.
-- **W15 Conflict with manual update** — after the export, a manual update changed a supplier-reported field of this job, and the file's value for that field differs from the job's current value. This applies whether the supplier changed the cell or not.
+- **W8 Revision mismatch** (Core) — the revision in the file differs from the job's current revision.
+- **W9 Outdated file** (Extension) — a newer export exists for the same supplier. Applies to the whole import and is checked whenever the import is shown.
+- **W10 Unexpected change** (Core) — a value in a locked column differs from its exported value. Locked-column values are never applied.
+- **W11 Delay** (Core) — expected completion date is later than the due date.
+- **W12 Status moved backwards** (Extension) — the file's production status comes earlier than the job's current status in the order *Not started → In production / On hold → Ready for inspection → Completed*.
+- **W13 Missing job** (Extension) — an open job that was in the export is missing from the file. The job is left unchanged.
+- **W14 Job changed by another import** (Extension) — after the export, another approved import changed a supplier-reported field of this job, and this file changes the same field to a different value.
+- **W15 Conflict with manual update** (Extension, built with FR-28) — after the export, a manual update changed a supplier-reported field of this job, and the file's value for that field differs from the job's current value. This applies whether the supplier changed the cell or not.
 
 **Consequences (testable):**
 - Each warning shows its rule ID and a Norwegian message naming the values involved, for example: «W15: PTS har *I produksjon* (manuell oppdatering 10.11.2026, Ingrid), fila har *Stoppet*».
@@ -460,7 +470,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 - A summary at the top shows the number of changed jobs, unchanged jobs, rejected rows and warnings.
 - Opening the change view never changes job data.
 
-**Notes:** A low-fidelity sketch is in `addendum.md` §A3. UX refines the layout.
+**Notes:** A low-fidelity sketch is in `addendum.md` §A3.3, and the screen list in §A3.1. UX refines the layout.
 
 #### FR-16: Revision reported per import
 
@@ -481,7 +491,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 
 ### 4.4 Approval and Import Log
 
-**Description:** The production planner approves or rejects a pending import as a whole. Approval applies all supplier-changed cells of non-rejected rows in one operation. Several pending imports may exist at once. Each one is always shown against the current job data, so the planner never approves against stale values. Every decision is logged. Realizes UJ-2, UJ-5, UJ-6.
+**Description:** The production planner approves or rejects a pending import as a whole. Approval applies all supplier-changed cells of non-rejected rows in one operation. Several pending imports may exist at once. Every decision is logged. Realizes UJ-2, UJ-5, UJ-6.
 
 **Functional Requirements:**
 
@@ -501,6 +511,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 - **Reject:** nothing is applied.
 - Rejected rows are never applied, even when the import is approved.
 - Cells that are not supplier-changed are never applied (FR-8).
+- Every applied change is recorded in the job history (FR-5), linked to the import log entry. FR-18 owns writing job history for imports, FR-28 for manual updates, and FR-29 for closes and reopens.
 - An approved or rejected import cannot be decided again.
 - Individual rows cannot be approved or rejected (§7.2).
 
@@ -652,7 +663,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 - **NFR-5 Responsiveness.** Validating a supplier file of up to 200 rows and showing its change view takes under 5 seconds on a typical laptop. `[ASSUMPTION]`
 - **NFR-6 Understandable messages.** Every rejection and warning names its rule ID and says in plain Norwegian what is wrong and, where possible, what the values were.
 - **NFR-7 Testability.** Automated tests cover every validation rule (F1–F4, R1–R7, W8–W15), FR-17 and the approval rules in FR-18.
-- **NFR-8 Fictional data only.** No real company data, drawings or supplier names in the repository, seed data or example files.
+- **NFR-8 Fictional data only.** No real company data, drawings or supplier names in the repository, seed data or example files. The real-world case involves classified documentation.
 - **NFR-9 Platform.** A desktop web application, used in a current version of Chrome or Edge. Mobile is not supported in v1. `[ASSUMPTION]`
 - **NFR-10 Language.** Everything a user or supplier sees is in Norwegian, using the labels in §3.1. This covers the user interface, messages, the supplier file and the rule messages.
   - Stored values (status, reason, inspection type) use the English Glossary terms internally and are shown with their Norwegian labels.
@@ -688,7 +699,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 
 **Extension** — built after Core is stable, in this order `[ASSUMPTION]` on the order:
 
-1. Manual update with job history, and W15 (FR-28)
+1. Manual update and W15 (FR-28)
 2. Close and reopen jobs (FR-29)
 3. Warnings W9, W12, W13 and W14 (FR-14)
 4. Supplier management (FR-4)
@@ -734,23 +745,15 @@ The v1 success criteria are functional and checked by tests and a demo run. SM-N
 
 ## 9. Constraints
 
-- **Course constraints:** IBE160 semester project, planned with BMAD and implemented with Claude Code. Core (§7.1) must be finished and stable before Extension work starts.
+- **Course constraints:** IBE160 semester project, planned with BMAD and implemented with Claude Code. Core comes first (§7.1).
 - **Simple architecture:** one web app and one local database, as the lecturer recommends. `bmad-architecture` makes the technology choices.
 - **Controlled IT environment:** suppliers exchange data only through files. There is no inbound access.
-- **Security of examples:** the real-world case involves classified documentation, so nothing real enters the repository (NFR-8).
 
 ## 10. Open Questions
 
 1. **Job register layout** — a spreadsheet-like table with inline editing, or a table with a separate form? Owner: Radmila, decided in `bmad-ux`.
 
-**Resolved 2026-11-08:**
-- Manual updates of supplier-reported fields are possible (FR-28).
-- A file that disagrees with a manual update is flagged (W15). On approval, supplier-changed cells win and untouched cells never overwrite (FR-8, FR-15).
-- A job closes automatically when it is `Completed`, and the production planner can close it by hand (FR-29).
-- Dates written as text are accepted (FR-13).
-- Everything users and suppliers see is in Norwegian (NFR-10, §3.1).
-- The status order for W12 is confirmed.
-- Requirements are prioritized as Core and Extension (§7.1).
+Decisions already made are listed in §0.1.
 
 ## 11. Assumptions Index
 
