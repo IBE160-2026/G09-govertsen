@@ -63,7 +63,7 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Entry state:** PTS is open in the browser on her desktop. No login in v1.
 - **Path:**
   1. She creates three new jobs for Supplier Alpha, entering drawing number, revision, description, quantity, supplier and due date for each.
-  2. She opens Supplier Alpha and clicks **Generate supplier file**.
+  2. She opens Supplier Alpha and clicks **Generate supplier file** (*Lag leverandørfil*).
   3. PTS downloads an `.xlsx` file with all of Supplier Alpha's open jobs, a unique Export ID and the current values pre-filled.
   4. She attaches the file to an email to the supplier, outside PTS.
 - **Climax:** the file opens in Excel with locked grey columns, yellow editable columns and dropdown lists. She knows the supplier cannot pick an invalid status.
@@ -90,7 +90,7 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Path:**
   1. She opens job PTS-0002 and changes the current revision from B to C.
   2. The job gets a *New revision* badge on the dashboard.
-  3. Next time she generates Supplier Alpha's file, the Revision cell of PTS-0002 is highlighted and says `NEW REVISION`.
+  3. Next time she generates Supplier Alpha's file, the Revision cell of PTS-0002 is highlighted and says `NY REVISJON`.
 - **Climax:** the supplier cannot miss that the drawing has changed, and Ingrid cannot forget to tell them.
 - **Resolution:** the badge disappears once the new file has been downloaded. Any later import that still reports revision B is flagged as a revision mismatch.
 - Realized by FR-3, FR-8, FR-9, FR-15 (W8).
@@ -123,7 +123,8 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Drawing number** — identifier of the engineering drawing the job is produced from. The drawing itself lives outside PTS.
 - **Current revision** — the drawing revision the job must be produced to, as registered in PTS. PTS stores only the current revision, not a history.
 - **New-revision mark** — a flag on a job set when the production planner changes its current revision, and cleared when a supplier file containing the job has been generated.
-- **Open job** — a job whose production status is not `Completed`. Jobs are not closed manually in v1.
+- **Open job** — a job that is not closed. Only open jobs are included in supplier files.
+- **Closed job** — a job that is closed, in one of two ways. It closes automatically when its production status becomes `Completed` through an approved import or a manual update. The production planner can also close it by hand, for example when an order is cancelled. A closed job can be reopened by the production planner. `[ASSUMPTION]` on reopening.
 - **Production status** — one of `Not started`, `In production`, `On hold`, `Ready for inspection`, `Completed`.
 - **On hold reason** — one of `Drawing issue`, `Missing material`, `Check requested`, `Other`. Required when the production status is `On hold`.
 - **Inspection request** — a supplier's request for inspection, given by production status `Ready for inspection` plus an inspection type: `Before painting` or `Final`.
@@ -144,6 +145,50 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 - **Dashboard** — the main overview of jobs, with flags and filters.
 - **Delayed** — a job whose expected completion date is later than its due date.
 - **Revision mismatch** — warning W8: the revision in the supplier file differs from the job's current revision.
+
+### 3.1 Norwegian Labels
+
+The user interface and the supplier file use these Norwegian labels. The PRD uses the English terms. `[ASSUMPTION]` on the exact wording — confirm or adjust.
+
+**Supplier file columns**
+
+| English (PRD) | Norwegian (file and UI) |
+|---|---|
+| Export ID | Eksport-ID |
+| Export date | Eksportdato |
+| Job ID | Jobb-ID |
+| Drawing number | Tegningsnummer |
+| Revision | Revisjon |
+| Revision note | Revisjonsmerknad |
+| Description | Beskrivelse |
+| Quantity | Antall |
+| Supplier | Leverandør |
+| Due date | Frist |
+| Production status | Produksjonsstatus |
+| On hold reason | Årsak til stopp |
+| Inspection type | Inspeksjonstype |
+| Completed quantity | Antall ferdig |
+| Expected completion date | Forventet ferdigdato |
+| Comment / issue description | Kommentar / avviksbeskrivelse |
+
+**Allowed values**
+
+| English (PRD) | Norwegian (file and UI) |
+|---|---|
+| Not started | Ikke startet |
+| In production | I produksjon |
+| On hold | Stoppet |
+| Ready for inspection | Klar for inspeksjon |
+| Completed | Ferdig |
+| Drawing issue | Tegningsfeil |
+| Missing material | Mangler materiale |
+| Check requested | Ønsker kontroll |
+| Other | Annet |
+| Before painting | Før maling |
+| Final | Sluttinspeksjon |
+| NEW REVISION | NY REVISJON |
+
+**Sheet names:** Instruksjoner, Jobber, Lister.
 
 ## 4. Features
 
@@ -206,6 +251,17 @@ The production planner can change a job's supplier-reported fields by hand, as a
 - A manual update counts like an approved import for pending imports: pending imports containing the job are recalculated, and the affected rows get W14 (FR-20).
 - The job history of a job lists manual updates and approved imports in time order.
 
+#### FR-29: Close and reopen a job
+
+A job closes automatically when it reaches `Completed`, and the production planner can close or reopen a job by hand.
+
+**Consequences (testable):**
+- **Automatic close:** when an approved import or a manual update sets production status `Completed`, the job becomes a closed job.
+- **Manual close:** the production planner can close an open job with any production status. The job history records who closed it and when.
+- **Reopen:** the production planner can reopen a closed job. It becomes an open job again and keeps its production status. `[ASSUMPTION]`
+- A closed job is not included in the next supplier file (FR-6), and it does not trigger W13.
+- A row for a closed job in a returned supplier file is still validated and shown in the change view. `[ASSUMPTION]`
+
 ### 4.2 Supplier File Generation
 
 **Description:** When the production planner has entered what is needed, they click **Generate supplier file** for one supplier. There is no separate "ready" or "finalize" step. PTS creates a `.xlsx` file from the fixed template with all of that supplier's open jobs, records the export, and downloads the file. The planner sends it outside PTS by email or a shared folder. The draft template is `pts-supplier-template.xlsx` in this folder. Realizes UJ-1, UJ-3.
@@ -229,7 +285,7 @@ The supplier file follows the fixed template.
 - **Locked columns, in this order:** Export ID, Export date, Job ID, Drawing number, Revision, Revision note, Description, Quantity, Supplier, Due date.
 - **Editable columns, in this order:** Production status, On hold reason, Inspection type, Completed quantity, Expected completion date, Comment / issue description.
 - Locked columns are protected and visually distinct (grey), and editable columns are unlocked (yellow). Sheet protection has no password. `[ASSUMPTION]`
-- The file contains an instructions sheet explaining how to fill it in and the rules from §4.3, in English. `[ASSUMPTION]`
+- The file contains an instructions sheet explaining how to fill it in and the rules from §4.3, in Norwegian.
 - Internal-only information, such as inspection results, is not included.
 
 #### FR-8: Pre-filled current values
@@ -256,7 +312,7 @@ The editable columns guide the supplier towards valid values.
 Jobs with a new-revision mark are marked in the supplier file, and the mark is cleared by the export. Realizes UJ-3.
 
 **Consequences (testable):**
-- A job whose current revision changed since the previous export to its supplier has its Revision cell highlighted, and Revision note says `NEW REVISION`. Otherwise Revision note is empty.
+- A job whose current revision changed since the previous export to its supplier has its Revision cell highlighted, and Revision note says `NY REVISJON`. Otherwise Revision note is empty.
 - After the file is generated, the new-revision mark of every job in the file is cleared.
 - Generating a file for another supplier does not clear the mark.
 
@@ -431,7 +487,7 @@ The production planner can filter the dashboard to jobs that are on hold, ready 
 **Consequences (testable):**
 - Each filter shows exactly the jobs with that flag and no others.
 - The number of jobs per filter is visible without applying it.
-- By default, only open jobs are shown, with an option to include completed jobs. `[ASSUMPTION]`
+- By default, only open jobs are shown, with an option to include closed jobs. `[ASSUMPTION]`
 
 ### 4.6 Demo Data and Example Files
 
@@ -477,7 +533,7 @@ The repository includes example supplier files with documented expected results.
 - **NFR-7 Testability.** Every validation rule (F1–F4, R1–R7, W8–W14) and FR-17 are covered by automated tests.
 - **NFR-8 Fictional data only.** No real company data, drawings or supplier names in the repository, seed data or example files.
 - **NFR-9 Platform.** A desktop web application, used in a current version of Chrome or Edge. Mobile is not supported in v1. `[ASSUMPTION]`
-- **NFR-10 Language.** The user interface is in Norwegian in v1. The supplier file stays in English, because its column names are part of the fixed template checked by F2. `[ASSUMPTION]` on the supplier file. The PRD, code and documentation are in English, so UX defines the Norwegian labels for the Glossary terms.
+- **NFR-10 Language.** Everything a user or supplier sees is in Norwegian. That covers the user interface, messages, the supplier file (sheet names, column names, allowed values, instructions) and the rule messages. The labels are listed in §3.1. The PRD, code and documentation are in English (project rule), and code uses the English Glossary terms internally.
 
 ## 6. Non-Goals (Explicit)
 
@@ -493,7 +549,7 @@ The repository includes example supplier files with documented expected results.
 
 ### 7.1 In Scope (v1)
 
-- Job register with manual registration of new revisions, manual updates with job history, and minimal supplier management (§4.1)
+- Job register with manual registration of new revisions, manual updates with job history, closing and reopening jobs, and minimal supplier management (§4.1)
 - Supplier file generation per supplier with the fixed template, pre-filled values, dropdowns and new-revision marking (§4.2)
 - Import with file checks, row validation, warnings and change view (§4.3)
 - Approval or rejection of whole imports, several pending imports, recalculation and import log (§4.4)
@@ -544,25 +600,25 @@ The v1 success criteria are functional and checked by tests and a demo run. SM-N
 ## 10. Open Questions
 
 1. **Job register layout** — spreadsheet-like table with inline editing, or a table with a separate form? Owner: Radmila, decided in `bmad-ux`.
-2. **Supplier file language** — should the supplier file later also be available in Norwegian? That would need a second template that F2 recognizes. Assumed English only for v1.
 
 **Resolved 2026-11-08:**
 - Manual updates of supplier-reported fields are possible (FR-28).
-- An open job is a job that is not `Completed`.
+- A job closes automatically when it is `Completed`, and the production planner can close it by hand (FR-29).
 - Dates written as text are accepted.
-- The interface is in Norwegian.
+- Everything users and suppliers see is in Norwegian (NFR-10, §3.1).
 - The status order for W12 is confirmed.
 
 ## 11. Assumptions Index
 
 - §3 / FR-1 — Job ID is generated by PTS.
-- FR-25 — The dashboard shows open jobs by default.
+- FR-25 — The dashboard shows open jobs by default, with an option to include closed jobs.
 - FR-4 — The planner can create suppliers. Minimal supplier management is needed.
-- FR-7 — Sheet protection without password. Instructions sheet in English.
+- FR-7 — Sheet protection without password.
 - FR-13 — An empty expected completion date is allowed. Text dates accepted in `dd.mm.yyyy` and `yyyy-mm-dd`.
 - FR-14 — Locked-column changes are never applied.
 - FR-24 — Revision mismatch flag is based on the last approved import for the job.
 - NFR-4 — 5 MB upload limit. Uploaded files kept as long as the import and log need them.
 - NFR-5 — 200 rows in under 5 seconds.
 - NFR-9 — Desktop, Chrome or Edge.
-- NFR-10 — Supplier file stays in English while the interface is Norwegian.
+- §3.1 — Exact Norwegian wording of columns and values.
+- §3 / FR-29 — A closed job can be reopened. Rows for closed jobs in a returned file are still validated.
