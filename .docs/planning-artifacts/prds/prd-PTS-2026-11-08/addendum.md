@@ -8,7 +8,7 @@ Supporting material for `prd.md`. It belongs downstream (architecture, UX) or is
 | A2 | Architecture hints | `bmad-architecture` |
 | A3 | Screens and sketches | `bmad-ux` |
 
-**Rule IDs:** the brief numbers its rules 1–15 plus F1–F4. The PRD keeps those numbers and adds a letter for the kind of rule: F = file check (F1–F4), R = row rejection (rules 1–7), W = warning (rules 8–15). For example, brief rule 8 is PRD W8.
+**Rule IDs:** the brief numbers its rules 1–15 plus F1–F4. The PRD keeps those numbers and puts a letter in front of rules 1–15 for the kind of rule: R = row rejection (rules 1–7), W = warning (rules 8–15). The file checks F1–F4 keep their IDs. For example, brief rule 8 is PRD W8.
 
 ## A1. Supplier File Template (draft)
 
@@ -25,30 +25,30 @@ Supporting material for `prd.md`. It belongs downstream (architecture, UX) or is
 
 Build details implemented in the draft:
 
-- **Dropdowns:** data validation of type *list* on K (status), L (on hold reason) and M (inspection type), referencing `Lister`. The error style is *stop*.
+- **Dropdowns:** data validation of type *list* on columns K (status), L (on hold reason) and M (inspection type), referencing `Lister`. The error style is *stop*.
 - **Completed quantity (N):** custom validation `AND(ISNUMBER(N2), N2=INT(N2), N2>=0, N2<=H2)`.
-- **Expected completion date (O):** date validation later than 2000-01-01, formatted `dd.mm.yyyy`.
+- **Expected completion date (O):** date validation that requires a date later than 2000-01-01, formatted `dd.mm.yyyy`.
 - **Conditional formatting (red)** for missing conditional fields:
-  - L, when K = *Stoppet*
-  - M, when K = *Klar for inspeksjon*
-  - P, when L = *Annet*
-- **New revision:** cells E and F filled light red with bold dark-red text, and F = `NY REVISJON`.
+  - column L, when column K = *Stoppet*
+  - column M, when column K = *Klar for inspeksjon*
+  - column P, when column L = *Annet*
+- **New revision:** for a job with a new revision, columns E and F are filled light red with bold dark-red text, and column F shows `NY REVISJON`.
 - **Header comments** explain the conditional rules.
 - **Sheet protection without password.** Excel protection is easy to remove and is a guide only. PTS detects locked-column changes on import (W10).
-- **Data rows only.** Empty rows are not unlocked, so suppliers cannot add jobs. A Job ID that is not in PTS is rejected anyway (R6).
+- **Only data rows are unlocked.** Empty rows stay locked, so suppliers cannot add jobs. A Job ID that is not in PTS is rejected anyway (R6).
 
 Excel data validation applies only to typed input. Pasted values bypass it, and other spreadsheet programs may ignore it. That is why PTS checks every rule again on import (PRD FR-9).
 
 ## A2. Architecture Hints
 
-These are not decisions. `bmad-architecture` makes them.
+These are hints, not decisions. `bmad-architecture` makes the decisions.
 
 ### A2.1 Data Model
 
 - **Two storage areas** follow from FR-17 and NFR-1:
   - **Staging:** imports and their rows, with validation results.
   - **Job data:** changed only by the approval transaction, a manual update, or a job register edit.
-- **Stored exports.** An export must keep every value it contained. These rules depend on it:
+- **Stored exports.** PTS must store every value in each export. These checks depend on it:
   - W10 compares locked columns with the export.
   - W13 needs the list of jobs in the export.
   - W9 needs the export order per supplier.
@@ -73,9 +73,9 @@ FR-8, FR-15, W14 and W15 compare three values for each editable cell:
 
 ### A2.3 Behavior, Stack and Layout
 
-- **Always current (FR-20):** compute the validation result and change view from the stored file rows against current job data each time they are shown, not once at upload. For the import log (FR-21), freeze the change view at decision time.
+- **Always current (FR-20):** compute the validation result and change view each time they are shown, by comparing the stored file rows with current job data, not once at upload. For the import log (FR-21), freeze the change view at decision time.
 - **Keep it simple:** one web app and one local database (lecturer feedback, criterion 5).
-- **Excel library:** the lecturer suggested a standard library, for example `openpyxl` in Python or an equivalent in JavaScript. The draft template uses `openpyxl` 3.1.
+- **Excel library:** the lecturer suggested a common Excel library, for example `openpyxl` in Python or an equivalent in JavaScript. The draft template uses `openpyxl` 3.1.
 - **Repository layout (NFR-11):** `testdata/` for example files and seed data. `.gitignore` covers the local database, uploads and generated supplier files.
 
 ## A3. Screens and Sketches (low fidelity)
@@ -84,7 +84,7 @@ These are inputs for `bmad-ux`, not designs. The lecturer asked for a sketch of 
 
 ### A3.1 Screens
 
-Screens v1 needs. UX confirms the names.
+Screens that v1 needs. `bmad-ux` confirms the names.
 
 | Screen | Purpose | FRs |
 |---|---|---|
@@ -104,7 +104,8 @@ The dashboard with the action filters (FR-25) and flags (FR-24). The flag icons 
 - ⏰ Delayed
 - 💬 Has comment
 - 🆕 New revision — send updated file
-- *FM* = *Før maling*
+
+In the Status column, *FM* = *Før maling*.
 
 ```
 PTS · Oversikt                                     [ + Ny jobb ]  [ Importer fil ]
