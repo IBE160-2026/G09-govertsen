@@ -87,13 +87,7 @@ FR-8, FR-15a, FR-15b, W14 and W15 compare three values for each editable cell:
 - **D** — the current value in job data
 - **F** — the value in the returned file
 
-| Case | D vs E | F | Change view | On approval |
-|---|---|---|---|---|
-| 1 | D = E | F = E | *No change* | Not applied |
-| 2 | D = E | F ≠ E | D → F | F applied |
-| 3 | D ≠ E | F = E | *Kept*, W14 or W15 as information | Not applied. No choice. |
-| 4 | D ≠ E | F ≠ E, F ≠ D | **Conflict field**: D and F side by side, W14 (import) or W15 (manual update) | The planner chooses *Use file value* or *Keep PTS value*. Nothing is preselected, and Approve stays disabled until every conflict field is decided. |
-| 5 | D ≠ E | F = D | *No change* | Nothing to apply, and no warning |
+The five cases and what happens in each are defined once, in PRD FR-15a (a table with E, D and F). This addendum does not repeat the table, so the two cannot drift apart. In short: cases 1 and 2 are normal, case 3 keeps the PTS value, case 4 is a conflict field that the planner decides, and case 5 needs no action. In Core only cases 1 and 2 occur.
 
 Example with a stage date, E = empty, D = 20.11.2026 (manual update after the export):
 
@@ -144,10 +138,10 @@ Filter: [Stoppet 2] [Klar for kontroll 1] [Forsinket 1] [Ny revisjon / avvik 1]
 Leverandør: [Alle ▾]   Rom: [Alle ▾]   Område: [Alle ▾]   ☐ Vis lukkede jobber   Sortering: Frist ▲
 
 Jobb      Rom   Tegning          Rev  Lev.  Aktivt trinn  Trinn     Frist       Forventet   Flagg
-PTS-0003  0101  DEMO-0101-A003   001  Alfa  Material      ○○○○○○    27.11.2026  09.12.2026  ⛔ Mangler materiale  ⏰ 💬
-PTS-0004  0102  DEMO-0102-B001   001  Alfa  Kontrollert   ●●○○○○    30.11.2026  28.11.2026  🔍
-PTS-0001  0101  DEMO-0101-A001   002  Alfa  Malt          ●●●●○○    04.12.2026  01.12.2026
-PTS-0002  0101  DEMO-0101-A002   003  Alfa  Sveiset       ●○○○○○    11.12.2026  –           🆕 Send ny fil
+PTS-0003  0101  DEMO-0101-A003   A    Alfa  Material      ○○○○○○    27.11.2026  09.12.2026  ⛔ Mangler materiale  ⏰ 💬
+PTS-0004  0102  DEMO-0102-B001   A    Alfa  Kontrollert   ●●○○○○    30.11.2026  28.11.2026  🔍
+PTS-0001  0101  DEMO-0101-A001   B    Alfa  Malt          ●●●●○○    04.12.2026  01.12.2026
+PTS-0002  0101  DEMO-0101-A002   C    Alfa  Sveiset       ●○○○○○    11.12.2026  –           🆕 Send ny fil
 ```
 
 ### A3.3 Change View
@@ -164,17 +158,17 @@ Filter: [Alle] [Konflikter] [Endret] [Avvist] [Advarsler]
 
 KONFLIKT
 PTS-0005  Sveiset                I PTS nå: 20.11.2026     I fila: 21.11.2026
-          ⚠ W15 Konflikt med manuell oppdatering 23.11.2026 (Ingrid). Leverandøren har endret cellen.
+          ⚠ W15 Konflikt med manuell oppdatering 26.11.2026 (Ingrid). Leverandøren har endret cellen.
           ( ) Bruk filverdi 21.11.2026      ( ) Behold PTS-verdi 20.11.2026
 
 ENDRINGER
 Jobb      Felt                   I PTS nå        I fila
 PTS-0001  Sandblåst              –               23.11.2026
           Forventet dato levert  01.12.2026      03.12.2026
-PTS-0002  ⚠ W8 Revisjonsavvik: fila har revisjon 002, gjeldende revisjon er 003
+PTS-0002  ⚠ W8 Revisjonsavvik: fila har revisjon B, gjeldende revisjon er C
           Sveiset                –               24.11.2026
 PTS-0003  Material               23.11.2026      –            ← beholdes: 23.11.2026
-          ⚠ W15 Konflikt med manuell oppdatering 23.11.2026 (Ingrid). Leverandøren har ikke
+          ⚠ W15 Konflikt med manuell oppdatering 26.11.2026 (Ingrid). Leverandøren har ikke
             endret cellen. PTS-verdien beholdes ved godkjenning.
           ⚠ W11 Forsinket: 09.12.2026 er etter fristen 27.11.2026
 PTS-0004  ✖ R2 Stoppet er Ja, men årsak til stopp mangler. Raden importeres ikke.

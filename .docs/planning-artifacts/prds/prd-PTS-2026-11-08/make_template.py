@@ -48,14 +48,14 @@ def d(day, month=11):
 # Fictional rows. Stage dates are in the order Material, Sveiset, Kontrollert, Sandblåst, Malt, Sluttkontroll.
 # (job, room, drawing, rev, new_rev, due, stage dates, stopped, reason, expected, comment)
 ROWS = [
-    ("PTS-0001", "0101", "DEMO-0101-A001", "002", False, d(4, 12), [d(16), d(18), d(20), d(23), None, None], "Nei", None, d(1, 12), None),
-    ("PTS-0002", "0101", "DEMO-0101-A002", "003", True, d(11, 12), [d(17), None, None, None, None, None], "Nei", None, None, None),
-    ("PTS-0003", "0101", "DEMO-0101-A003", "001", False, d(27), [None, None, None, None, None, None], "Ja", "Mangler materiale", d(9, 12), "Venter på levering av plate"),
-    ("PTS-0004", "0102", "DEMO-0102-B001", "001", False, d(30), [d(10), d(14), None, None, None, None], "Nei", None, d(28), None),
-    ("PTS-0005", "0102", "DEMO-0102-B002", "002", False, d(18, 12), [None, None, None, None, None, None], "Nei", None, None, None),
-    ("PTS-0006", "0102", "DEMO-0102-B003", "001", False, d(2, 12), [d(5), d(9), d(12), d(16), d(19), d(23)], "Nei", None, d(27), None),
-    ("PTS-0007", "0103", "DEMO-0103-C001", "001", False, d(9, 12), [d(12), d(16), d(18), d(23), None, None], "Nei", None, d(4, 12), "Aluminium"),
-    ("PTS-0008", "0103", "DEMO-0103-C002", "002", False, d(15, 12), [d(20), None, None, None, None, None], "Ja", "Tegningsfeil", None, "AVKLARES – måltoleranse"),
+    ("PTS-0001", "0101", "DEMO-0101-A001", "B", False, d(4, 12), [d(16), d(18), d(20), d(23), None, None], "Nei", None, d(1, 12), None),
+    ("PTS-0002", "0101", "DEMO-0101-A002", "C", True, d(11, 12), [d(17), None, None, None, None, None], "Nei", None, None, None),
+    ("PTS-0003", "0101", "DEMO-0101-A003", "A", False, d(27), [None, None, None, None, None, None], "Ja", "Mangler materiale", d(9, 12), "Venter på levering av plate"),
+    ("PTS-0004", "0102", "DEMO-0102-B001", "A", False, d(30), [d(10), d(14), None, None, None, None], "Nei", None, d(28), None),
+    ("PTS-0005", "0102", "DEMO-0102-B002", "B", False, d(18, 12), [None, None, None, None, None, None], "Nei", None, None, None),
+    ("PTS-0006", "0102", "DEMO-0102-B003", "A", False, d(2, 12), [d(5), d(9), d(12), d(16), d(19), d(23)], "Nei", None, d(27), None),
+    ("PTS-0007", "0103", "DEMO-0103-C001", "A", False, d(9, 12), [d(12), d(16), d(18), d(23), None, None], "Nei", None, d(4, 12), "Aluminium"),
+    ("PTS-0008", "0103", "DEMO-0103-C002", "B", False, d(15, 12), [d(20), None, None, None, None, None], "Ja", "Tegningsfeil", None, "AVKLARES – måltoleranse"),
 ]
 
 GREY = PatternFill("solid", fgColor="E7E6E6")
@@ -218,12 +218,12 @@ def build_job_package(out):
     ws["B1"].comment = Comment("Intern gruppering, for eksempel dekk. Kan stå tom. Går ikke til leverandøren.", "PTS")
 
     rows = [
-        ("0101", "Område A", "DEMO-0101-A001", "002", d(4, 12)),
-        ("0101", "Område A", "DEMO-0101-A002", "003", d(11, 12)),
-        ("0102", "Område A", "DEMO-0102-B001", "001", d(30)),
-        ("0102", "Område A", "DEMO-0102-B002", "002", d(18, 12)),
-        ("0201", "Område B", "DEMO-0201-D001", "001", d(9, 12)),
-        ("0201", "Område B", "DEMO-0201-D002", "001", d(15, 12)),
+        ("0101", "Område A", "DEMO-0101-A001", "B", d(4, 12)),
+        ("0101", "Område A", "DEMO-0101-A002", "C", d(11, 12)),
+        ("0102", "Område A", "DEMO-0102-B001", "A", d(30)),
+        ("0102", "Område A", "DEMO-0102-B002", "B", d(18, 12)),
+        ("0201", "Område B", "DEMO-0201-D001", "A", d(9, 12)),
+        ("0201", "Område B", "DEMO-0201-D002", "A", d(15, 12)),
     ]
     for r, row in enumerate(rows, start=2):
         for c, v in enumerate(row, start=1):
