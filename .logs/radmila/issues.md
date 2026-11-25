@@ -7,8 +7,12 @@
 - [x] 2026-11-08 [prd](998-2026-11-08-18-07-31-prd.md) — Bekreft de gjenværende antakelsene i PRD §11 (5 MB / 200 rader, rekkefølgen på utvidelsene, gjenåpning) (løst 2026-11-25, radgrensen er nå 500)
 - [ ] 2026-11-08 [prd](998-2026-11-08-18-07-31-prd.md) — Velg oppsett for jobbregisteret i bmad-ux
 - [ ] 2026-11-08 [prd](998-2026-11-08-18-07-31-prd.md) — Neste steg: bmad-ux, deretter bmad-architecture og bmad-create-epics-and-stories
-- [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Svar på lærerens refleksjonsspørsmål i tilbakemelding-prd.md (§7): valg per felt i stedet for «fila vinner», og hvordan W8–W15 ble sjekket
+- [x] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Svar på lærerens refleksjonsspørsmål i tilbakemelding-prd.md (§7): valg per felt i stedet for «fila vinner», og hvordan W8–W15 ble sjekket (løst 2026-11-25, se response-to-prd-feedback.md)
 - [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Avklar bruken av architecture/technology.md (beskriver et annet prosjekt) i bmad-architecture
 - [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Eksempelfila med ekte data ligger utenfor repoet og må aldri kopieres inn (NFR-8)
 - [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Utsatt: kunde- eller ordrefelt på jobber (samme tegning for ulike kunder), senere versjoner
 - [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Valgfritt: flytte PRD §0.1 (endringstabellen) til addendum når PRD-en er stabil
+- [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Sjekk kursbeskrivelsen eller spør læreren hva som kreves i neste del (kodeleveranse, retrospektiv, sporbarhet). Vi har bare kriteriene for del 1
+- [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Lag en sporbarhetstabell fra brief-kriterium til SM, FR, story og test (teller i kriteriet «Prosess og KI-styring», 30 %)
+- [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Kjør bmad-project-context (repoets agentinstruksjoner, kommandoer og konvensjoner) før bygging
+- [ ] 2026-11-25 [prd](998-2026-11-08-18-07-31-prd.md) — Utsatt: eget varsel når en allerede registrert trinndato endres av leverandøren (i dag bare synlig i endringsvisning og jobbhistorikk)
