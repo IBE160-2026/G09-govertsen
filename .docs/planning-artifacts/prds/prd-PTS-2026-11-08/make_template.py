@@ -29,7 +29,7 @@ STAGES = ["Material", "Sveiset", "Kontrollert", "Sandblåst", "Malt", "Sluttkont
 
 LOCKED = [
     ("Eksport-ID", 18), ("Eksportdato", 12), ("Jobb-ID", 10), ("Rom", 8), ("Tegningsnummer", 28),
-    ("Revisjon", 10), ("Revisjonsmerknad", 16), ("Antall ark", 9), ("Leverandør", 26), ("Frist", 12),
+    ("Revisjon", 10), ("Revisjonsmerknad", 16), ("Leverandør", 26), ("Frist", 12),
 ]
 EDITABLE = [(s, 13) for s in STAGES] + [
     ("Stoppet", 10), ("Årsak til stopp", 18), ("Forventet dato levert", 14), ("Kommentar / avviksbeskrivelse", 40),
@@ -46,16 +46,16 @@ def d(day, month=11):
 
 
 # Fictional rows. Stage dates are in the order Material, Sveiset, Kontrollert, Sandblåst, Malt, Sluttkontroll.
-# (job, room, drawing, rev, new_rev, sheets, due, stage dates, stopped, reason, expected, comment)
+# (job, room, drawing, rev, new_rev, due, stage dates, stopped, reason, expected, comment)
 ROWS = [
-    ("PTS-0001", "0101", "DEMO-0101-A001", "002", False, 1, d(4, 12), [d(16), d(18), d(20), d(23), None, None], "Nei", None, d(1, 12), None),
-    ("PTS-0002", "0101", "DEMO-0101-A002", "003", True, 2, d(11, 12), [d(17), None, None, None, None, None], "Nei", None, None, None),
-    ("PTS-0003", "0101", "DEMO-0101-A003", "001", False, 1, d(27), [None, None, None, None, None, None], "Ja", "Mangler materiale", d(9, 12), "Venter på levering av plate"),
-    ("PTS-0004", "0102", "DEMO-0102-B001", "001", False, 1, d(30), [d(10), d(14), None, None, None, None], "Nei", None, d(28), None),
-    ("PTS-0005", "0102", "DEMO-0102-B002", "002", False, 3, d(18, 12), [None, None, None, None, None, None], "Nei", None, None, None),
-    ("PTS-0006", "0102", "DEMO-0102-B003", "001", False, 1, d(2, 12), [d(5), d(9), d(12), d(16), d(19), d(23)], "Nei", None, d(27), None),
-    ("PTS-0007", "0103", "DEMO-0103-C001", "001", False, 1, d(9, 12), [d(12), d(16), d(18), d(23), None, None], "Nei", None, d(4, 12), "Aluminium"),
-    ("PTS-0008", "0103", "DEMO-0103-C002", "002", False, 2, d(15, 12), [d(20), None, None, None, None, None], "Ja", "Tegningsfeil", None, "AVKLARES – måltoleranse"),
+    ("PTS-0001", "0101", "DEMO-0101-A001", "002", False, d(4, 12), [d(16), d(18), d(20), d(23), None, None], "Nei", None, d(1, 12), None),
+    ("PTS-0002", "0101", "DEMO-0101-A002", "003", True, d(11, 12), [d(17), None, None, None, None, None], "Nei", None, None, None),
+    ("PTS-0003", "0101", "DEMO-0101-A003", "001", False, d(27), [None, None, None, None, None, None], "Ja", "Mangler materiale", d(9, 12), "Venter på levering av plate"),
+    ("PTS-0004", "0102", "DEMO-0102-B001", "001", False, d(30), [d(10), d(14), None, None, None, None], "Nei", None, d(28), None),
+    ("PTS-0005", "0102", "DEMO-0102-B002", "002", False, d(18, 12), [None, None, None, None, None, None], "Nei", None, None, None),
+    ("PTS-0006", "0102", "DEMO-0102-B003", "001", False, d(2, 12), [d(5), d(9), d(12), d(16), d(19), d(23)], "Nei", None, d(27), None),
+    ("PTS-0007", "0103", "DEMO-0103-C001", "001", False, d(9, 12), [d(12), d(16), d(18), d(23), None, None], "Nei", None, d(4, 12), "Aluminium"),
+    ("PTS-0008", "0103", "DEMO-0103-C002", "002", False, d(15, 12), [d(20), None, None, None, None, None], "Ja", "Tegningsfeil", None, "AVKLARES – måltoleranse"),
 ]
 
 GREY = PatternFill("solid", fgColor="E7E6E6")
@@ -120,8 +120,8 @@ def build_supplier_file(out):
     ws[f"{col_of['Årsak til stopp']}1"].comment = Comment("Påkrevd når Stoppet er Ja. Annet krever kommentar.", "PTS")
 
     for r, row in enumerate(ROWS, start=2):
-        job, room, drw, rev, new_rev, sheets, due, stage_dates, stopped, reason, expected, comment = row
-        values = [EXPORT_ID, EXPORT_DATE, job, room, drw, rev, "NY REVISJON" if new_rev else None, sheets, SUPPLIER, due,
+        job, room, drw, rev, new_rev, due, stage_dates, stopped, reason, expected, comment = row
+        values = [EXPORT_ID, EXPORT_DATE, job, room, drw, rev, "NY REVISJON" if new_rev else None, SUPPLIER, due,
                   *stage_dates, stopped, reason, expected, comment]
         for c, v in enumerate(values, start=1):
             cell = ws.cell(row=r, column=c, value=v)
@@ -209,7 +209,7 @@ def build_job_package(out):
     wb = Workbook()
     ws = wb.active
     ws.title = "Jobbpakke"
-    columns = [("Rom", 10), ("Område", 18), ("Tegningsnummer", 28), ("Revisjon", 10), ("Antall ark", 11), ("Frist", 13)]
+    columns = [("Rom", 10), ("Område", 18), ("Tegningsnummer", 28), ("Revisjon", 10), ("Frist", 13)]
     for c, (name, width) in enumerate(columns, start=1):
         style_header(ws.cell(row=1, column=c, value=name), HEAD_EDIT)
         ws.column_dimensions[get_column_letter(c)].width = width
@@ -218,12 +218,12 @@ def build_job_package(out):
     ws["B1"].comment = Comment("Intern gruppering, for eksempel dekk. Kan stå tom. Går ikke til leverandøren.", "PTS")
 
     rows = [
-        ("0101", "Område A", "DEMO-0101-A001", "002", 1, d(4, 12)),
-        ("0101", "Område A", "DEMO-0101-A002", "003", 2, d(11, 12)),
-        ("0102", "Område A", "DEMO-0102-B001", "001", 1, d(30)),
-        ("0102", "Område A", "DEMO-0102-B002", "002", 3, d(18, 12)),
-        ("0201", "Område B", "DEMO-0201-D001", "001", 1, d(9, 12)),
-        ("0201", "Område B", "DEMO-0201-D002", "001", 2, d(15, 12)),
+        ("0101", "Område A", "DEMO-0101-A001", "002", d(4, 12)),
+        ("0101", "Område A", "DEMO-0101-A002", "003", d(11, 12)),
+        ("0102", "Område A", "DEMO-0102-B001", "001", d(30)),
+        ("0102", "Område A", "DEMO-0102-B002", "002", d(18, 12)),
+        ("0201", "Område B", "DEMO-0201-D001", "001", d(9, 12)),
+        ("0201", "Område B", "DEMO-0201-D002", "001", d(15, 12)),
     ]
     for r, row in enumerate(rows, start=2):
         for c, v in enumerate(row, start=1):
@@ -236,14 +236,10 @@ def build_job_package(out):
                 cell.number_format = "@"
 
     last = 500  # room for a full job package
-    dv = DataValidation(type="whole", operator="greaterThanOrEqual", formula1="1", allow_blank=True,
-                        errorTitle="Ugyldig antall", error="Heltall fra 1 og oppover.")
-    ws.add_data_validation(dv)
-    dv.add(f"E2:E{last}")
     dv = DataValidation(type="date", operator="greaterThan", formula1="DATE(2000,1,1)", allow_blank=True,
                         errorTitle="Ugyldig dato", error="Skriv en gyldig dato (dd.mm.åååå).")
     ws.add_data_validation(dv)
-    dv.add(f"F2:F{last}")
+    dv.add(f"E2:E{last}")
 
     write_instructions(wb, [
         ("PTS jobbpakke", True),
@@ -252,7 +248,7 @@ def build_job_package(out):
         ("Slik fyller du ut fila", True),
         ("1. Én rad per tegning. Alle kolonner unntatt Område må fylles ut.", False),
         ("2. Importer fila i PTS og velg leverandør. PTS viser en forhåndsvisning før noe opprettes.", False),
-        ("3. Rader hoppes over hvis tegningsnummer eller revisjon mangler, antall ark ikke er et heltall på 1 eller mer, fristen ikke er en gyldig dato, eller tegningsnummeret finnes fra før.", False),
+        ("3. Rader hoppes over hvis rom, tegningsnummer eller revisjon mangler, eller fristen ikke er en gyldig dato. Et tegningsnummer som finnes fra før gir en advarsel i forhåndsvisningen, men hoppes ikke over, siden samme tegning kan lages flere ganger.", False),
         ("4. Maks 500 rader per fil.", False),
         ("", False),
         ("Alle data i denne fila er fiktive.", False),

@@ -24,24 +24,24 @@ Eight fictional example jobs for *Leverandør Alfa (fiktiv)*, Export ID `EXP-202
 | Sheet | Purpose |
 |---|---|
 | `Instruksjoner` | Supplier-facing instructions and rules. Protected. Shown first. |
-| `Jobber` | One row per open job, sorted by room. Header row frozen, and columns A–E frozen. Columns A–J locked (grey), K–T editable (yellow). |
+| `Jobber` | One row per open job, sorted by room. Header row frozen, and columns A–E frozen. Columns A–I locked (grey), J–S editable (yellow). |
 | `Lister` | Hidden. Allowed values for the two dropdowns. Protected. |
 
 | Columns | Content |
 |---|---|
-| A–J (locked) | Eksport-ID, Eksportdato, Jobb-ID, Rom, Tegningsnummer, Revisjon, Revisjonsmerknad, Antall ark, Leverandør, Frist |
-| K–P (editable) | Material, Sveiset, Kontrollert, Sandblåst, Malt, Sluttkontroll (a date each) |
-| Q–R (editable) | Stoppet (*Ja* / *Nei*), Årsak til stopp |
-| S–T (editable) | Forventet dato levert, Kommentar / avviksbeskrivelse |
+| A–I (locked) | Eksport-ID, Eksportdato, Jobb-ID, Rom, Tegningsnummer, Revisjon, Revisjonsmerknad, Leverandør, Frist |
+| J–O (editable) | Material, Sveiset, Kontrollert, Sandblåst, Malt, Sluttkontroll (a date each) |
+| P–Q (editable) | Stoppet (*Ja* / *Nei*), Årsak til stopp |
+| R–S (editable) | Forventet dato levert, Kommentar / avviksbeskrivelse |
 
 Build details implemented in the draft:
 
-- **Date columns (K–P and S):** data validation of type *date* that requires a date later than 2000-01-01, formatted `dd.mm.yyyy`. The error style is *stop*.
-- **Dropdowns:** data validation of type *list* on column Q (*Ja* / *Nei*) and column R (stop reason), referencing `Lister`.
+- **Date columns (J–O and R):** data validation of type *date* that requires a date later than 2000-01-01, formatted `dd.mm.yyyy`. The error style is *stop*.
+- **Dropdowns:** data validation of type *list* on column P (*Ja* / *Nei*) and column Q (stop reason), referencing `Lister`.
 - **Conditional formatting:**
-  - red in column R when column Q = *Ja* and R is empty
-  - red in column T when column R = *Annet* and T is empty
-  - orange in a stage column (L–P) when it has a date but an earlier stage column (from K) is empty. This is a hint for W12. PTS decides on import.
+  - red in column Q when column P = *Ja* and Q is empty
+  - red in column S when column Q = *Annet* and S is empty
+  - orange in a stage column (K–O) when it has a date but an earlier stage column (from J) is empty. This is a hint for W12. PTS decides on import.
 - **New revision:** for a job with a new revision, columns F and G are filled light red with bold dark-red text, and column G shows `NY REVISJON`.
 - **Room (D):** stored as text, so room numbers keep their leading zeros.
 - **Header comments** explain the stage order, the stopped flag and the revision note.
@@ -53,10 +53,10 @@ Excel data validation applies only to typed input. Pasted values bypass it, and 
 
 ### A1.2 Job package
 
-`pts-job-package-template.xlsx` has the sheets `Instruksjoner` and `Jobbpakke`. The columns are *Rom*, *Område*, *Tegningsnummer*, *Revisjon*, *Antall ark* and *Frist*, with six fictional example rows.
+`pts-job-package-template.xlsx` has the sheets `Instruksjoner` and `Jobbpakke`. The columns are *Rom*, *Område*, *Tegningsnummer*, *Revisjon* and *Frist*, with six fictional example rows.
 
-- **Validation:** *Antall ark* must be a whole number of 1 or more, and *Frist* must be a date. Both apply down to row 500, which is the row limit.
-- **Skipped rows** and the reasons are decided by PTS on import (FR-31). The file itself does not block them.
+- **Validation:** *Frist* must be a date. It applies down to row 500, which is the row limit.
+- **Skipped rows** and the reasons are decided by PTS on import (FR-31). The file itself does not block them. A drawing number that already exists is not skipped. PTS shows a warning in the preview.
 - **Rom and Revisjon** are stored as text, so leading zeros are kept.
 
 ## A2. Architecture Hints
