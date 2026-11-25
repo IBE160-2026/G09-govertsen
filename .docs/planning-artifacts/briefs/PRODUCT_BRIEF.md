@@ -150,7 +150,7 @@ Every uploaded file is first checked as a whole, then every row is checked again
 9. **Outdated file:** a newer export exists for the same supplier.
 10. **Unexpected change:** a locked column has been changed by the supplier.
 11. **Delay:** the expected delivery date is later than the due date.
-12. **Stage out of order, or date removed:** a stage has a date while an earlier stage has none, or the file removes a stage date the job already has.
+12. **Stage date out of order, in the future, or removed:** a stage has a date while an earlier stage has none, a stage date is earlier than the date of an earlier stage, a stage date is in the future, or the file removes a stage date the job already has.
 13. **Missing job:** an open job that was included in the export is missing from the uploaded file. The job is left unchanged.
 14. **Job changed by another import:** after the export, another approved import changed a field of this job, and the file's value for that field differs from the job's current value.
 15. **Conflict with manual update:** after the export, the user changed a field of this job by a manual update, and the file's value for that field differs from the job's current value.
@@ -191,7 +191,7 @@ All criteria below can be checked by testing v1.
 4. Before approval, the user can see exactly what changed per job compared to the database.
 5. **No import ever changes the database before it is approved** — verified by tests.
 6. A file reporting an older revision than the job's current revision is flagged as a revision mismatch.
-7. A job whose expected delivery date is later than its due date is flagged as delayed on the dashboard.
+7. A job whose expected delivery date is later than its due date, or whose due date has passed while it is open, is flagged as delayed on the dashboard.
 8. *(Extension)* When two pending imports contain the same job and one is approved, the other import shows the updated values, and a field that would overwrite them is shown as a conflict the user decides per field.
 9. From the dashboard alone, the user can find all jobs that are stopped, ready for inspection, delayed, or affected by a new revision.
 10. In an exported file, Stopped and Stop reason are dropdown lists containing only the allowed values, and the stage columns accept only dates.
@@ -212,7 +212,7 @@ The repository includes example Excel files with expected results, used both in 
 | `duplicate-job-id.xlsx` | The same Job ID on two rows | Both rows rejected as duplicates |
 | `older-export.xlsx` | A file from an earlier export than the latest | Whole file rejected (F5) |
 | `wrong-template.xlsx` | A required column renamed and Export ID removed | Whole file rejected |
-| `stage-out-of-order.xlsx` *(Extension)* | A stage date without an earlier stage, and a removed date | Warning: stage out of order |
+| `stage-out-of-order.xlsx` *(Extension)* | A stage date without an earlier stage, a date earlier than an earlier stage, a future date, and a removed date | Warning: stage date out of order |
 | `missing-job.xlsx` *(Extension)* | One exported open job removed from the file | Warning: missing job |
 | `job-package.xlsx` *(Extension)* | Valid rows, a row without drawing number, a drawing number that already exists | Preview with created rows, a skipped row and a duplicate warning |
 

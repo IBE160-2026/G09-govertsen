@@ -59,3 +59,7 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Office and LibreOffice lock files (created while a file is open)
+~$*
+.~lock.*#

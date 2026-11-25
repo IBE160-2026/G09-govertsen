@@ -1,6 +1,6 @@
 ---
 title: "PRD: Production Tracking System (PTS)"
-status: draft
+status: final
 created: 2026-11-08
 updated: 2026-11-25
 ---
@@ -30,7 +30,7 @@ This PRD turns the PTS product brief into requirements that architecture, UX, ep
 - **Rule IDs.** Validation rules keep the IDs from the brief: F1–F4, R1–R7 and W8–W15, plus F5 added by this PRD. The same rule has the same ID in the brief, this PRD, the stories and the tests. R3 and R4 are retired and their IDs are not reused.
 - **Priority.** Every FR has a priority, **Core** or **Extension** (§7.1). Core is the flow that must be finished and stable first: *create job → generate supplier file → import → change view → approve → dashboard*. The **Core minimum** (§7.1) is the smallest part of Core that works end to end, and is built first.
 - **Success metrics.** SM-1 … SM-12 correspond to success criteria 1–12 in the brief. SM-13 … SM-16 and the counter-metrics SM-C1 and SM-C2 are added by this PRD.
-- **Assumptions.** Inferences not yet confirmed are tagged `[ASSUMPTION]` inline and listed in §11. All assumptions of PRD v1 and v2 were confirmed by the project owner on 2026-11-25. Two added after the review are open.
+- **Assumptions.** Inferences not yet confirmed are tagged `[ASSUMPTION]` inline and listed in §11. All assumptions were confirmed by the project owner on 2026-11-25, and none are open.
 - **Addendum.** Technical hints, template build details and screen sketches live in `addendum.md`.
 
 **All data in PTS, this PRD and the repository is fictional.** No real company, project or supplier names are used anywhere in the repository (NFR-8).
@@ -67,7 +67,8 @@ For reviewers. The first table lists the changes from brief v3 that were decided
 | A **Core minimum** of 22 requirements is defined, with a build order. | §7.1 | Lecturer feedback 4.2: Core is large for one semester. |
 | New file check **F5**: Core accepts only a file from the supplier's latest export, and only one pending import per supplier. Conflicts therefore cannot occur in Core. W9 and FR-19 replace the restriction in the Extension. | FR-11, FR-12 | Keeps the hardest rule (W14/W15) out of the first delivery without leaving a hidden risk in Core. |
 | *Register delivery* is Core (FR-29a). Closing and reopening by hand is Extension (FR-29b). | FR-29a, FR-29b | Delivery is the last step of the flow. |
-| Assumptions are confirmed. The status is `draft` again until the two assumptions added after the review (§11) are confirmed. | front matter, §11 | Lecturer feedback 4.4. |
+| All assumptions are confirmed, and the status is `final`. | front matter, §11 | Lecturer feedback 4.4. |
+| Review changes: *Delayed* also covers an open job whose due date has passed. W12 also covers a future stage date and a stage date earlier than an earlier stage. Rows for closed jobs are shown but never applied. F5 is checked at approval, and files are limited to 500 rows. | FR-14b, FR-24, FR-29a, FR-12 | Review on 2026-11-25, decided by the project owner. |
 
 ## 1. Vision
 
@@ -250,7 +251,7 @@ The persona is fictional: **Ingrid, production planner** at a marine engineering
 
 - **Job register** — the screens where the production planner creates and edits jobs and sees a single job in detail, including its flags and job history. The dashboard is the overview across jobs.
 - **Dashboard** — the main overview of jobs, with flags and filters.
-- **Delayed** — a job whose expected delivery date is later than its due date.
+- **Delayed** — an open job whose expected delivery date is later than its due date, or whose due date has passed.
 - **Ready for inspection** — a job whose active stage is Inspected or Final inspection.
 - **Revision mismatch (warning W8)** — a returned supplier file reports a revision other than the job's current revision. Calculated against current data whenever the import is shown (principle in §4).
 - **Revision mismatch flag** — a flag on a job, set when an approved import reported a revision other than the job's current revision at approval. FR-24 defines when the flag is set and cleared. It is a different thing from the warning, which is recalculated each time the import is shown.
@@ -385,7 +386,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 - The job is then a closed job, and the job history records who registered the delivery and when (FR-22).
 - A delivery can be registered even when some stages have no date. The confirmation names the missing stages.
 - A closed job is not included in the next supplier file (FR-6), is not shown on the dashboard by default (FR-25), and does not trigger W13.
-- A row for a closed job in a returned supplier file is still validated and shown in the change view.
+- A row for a closed job in a returned supplier file is validated and shown in the change view with a note that the job is closed. Its changes are never applied, even when the import is approved.
 
 **Notes:** Until FR-29b is built, a wrongly created or cancelled job stays open.
 
@@ -491,11 +492,11 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 
 **Priority: Core.** The whole file is rejected (a file rejection), and no import is created, when:
 
-- **F1** — the file is not an `.xlsx` file, cannot be read, or has more than 500 job rows. `[ASSUMPTION]` on the row limit.
+- **F1** — the file is not an `.xlsx` file, cannot be read, or has more than 500 job rows.
 - **F2** — one or more template columns are missing or renamed.
 - **F3** — the Export ID is missing, was not generated by PTS, or differs between rows.
 - **F4** — the file contains no job rows.
-- **F5** — the Export ID belongs to an earlier export than the latest export for that supplier, or an import from that export has already been approved. F5 is checked again at approval, and an import whose export is no longer the latest cannot be approved, only rejected. Once FR-19 is built, a file from an earlier export is accepted and gets warning W9 instead, and conflicts are decided in the change view. `[ASSUMPTION]`
+- **F5** — the Export ID belongs to an earlier export than the latest export for that supplier, or an import from that export has already been approved. F5 is checked again at approval, and an import whose export is no longer the latest cannot be approved, only rejected. Once FR-19 is built, a file from an earlier export is accepted and gets warning W9 instead, and conflicts are decided in the change view.
 
 **Consequences (testable):**
 - The message names the rule and the problem, for example: «F2: Kolonnen *Sveiset* mangler».
@@ -535,7 +536,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 **Priority: Extension.** A row, or the whole import for W9, gets a warning when one of the conditions below holds. Warnings do not stop approval.
 
 - **W9 Outdated file** — a newer export exists for the same supplier. Applies to the whole import and is checked whenever the import is shown. It replaces file check F5 once FR-19 is built.
-- **W12 Stage out of order, or date removed** — in the row as it would look after the import, a stage has a date while an earlier stage has none, or the file removes a stage date the job has in PTS.
+- **W12 Stage date out of order, in the future, or removed** — in the row as it would look after the import, a stage has a date while an earlier stage has none, a stage date is earlier than the date of an earlier stage, or a stage date is later than today. W12 also applies when the file removes a stage date the job has in PTS.
 - **W13 Missing job** — an open job that was in the export is missing from the file. The job is left unchanged.
 - **W14 Job changed by another import** and **W15 Conflict with manual update** — one rule for both. A field gets a warning when the job changed after the export (D ≠ E) and the file value differs from the current value (F ≠ D). The cause decides the ID: **W14** if the latest change after the export came from another approved import, **W15** if it came from a manual update (FR-28). Warnings are shown per field. FR-15a defines what happens to the value in each case, and FR-15b how the planner decides.
 
@@ -620,7 +621,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 **Consequences (testable):**
 - **Approve:** all supplier-changed cells of non-rejected rows are applied in one all-or-nothing operation. If anything fails, nothing is applied.
 - **Reject:** nothing is applied.
-- Rejected rows are never applied, even when the import is approved.
+- Rejected rows are never applied, even when the import is approved. The same goes for rows of closed jobs (FR-29a).
 - Cells that are not supplier-changed are never applied (FR-8).
 - Every applied change is recorded in the job history (FR-5), linked to the import log entry. FR-18 owns writing job history for imports, FR-28 for manual updates, and FR-29a and FR-29b for deliveries, closes and reopens.
 - An approved or rejected import cannot be decided again.
@@ -694,13 +695,14 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 
 - **Stopped** — with the reason.
 - **Ready for inspection** — the active stage is Inspected or Final inspection.
-- **Delayed** — expected delivery date later than due date.
+- **Delayed** — the expected delivery date is later than the due date, or the due date has passed and the job is still open.
 - **New revision — send updated file to supplier** — the job has a new-revision mark.
 - **Revision mismatch flag** — an approved import reported a revision other than the one that was current for the job when the import was approved. Rejected rows do not count. The flag is cleared when a later approved import reports the current revision, or when the planner registers a new revision (the new-revision mark then takes over).
 - **Has comment** — the comment / issue description is not empty.
 
 **Consequences (testable):**
 - A job with expected delivery date 09.12.2026 and due date 27.11.2026 shows *Delayed*.
+- An open job with no expected delivery date and a due date before today shows *Delayed*. Tests set the current date to a fixed value.
 - The *New revision* flag disappears when a supplier file containing the job is generated.
 - Registering a new revision does not raise the *Revision mismatch flag* on its own.
 - **Scenario:** a file reports revision B while the current revision is C, and the import is approved: the flag is set. The planner then registers revision D: the flag is cleared and the new-revision mark is set.
@@ -765,7 +767,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 | File | Content | Expected result |
 |---|---|---|
 | `outdated-export.xlsx` | From the older of two exports | W9, replaces F5 |
-| `stage-out-of-order.xlsx` | *Sandblåst* filled in without *Kontrollert*; a removed date | W12 |
+| `stage-out-of-order.xlsx` | *Sandblåst* filled in without *Kontrollert*; *Sveiset* earlier than *Material*; a future date; a removed date | W12 |
 | `missing-job.xlsx` | One exported open job removed | W13 |
 | `job-package.xlsx` | Valid rows, a row without drawing number, a drawing number that already exists | Preview with created rows, a skipped row and a duplicate warning (FR-31) |
 
@@ -860,7 +862,7 @@ The v1 success criteria are functional and checked by tests and a demo run. SM-1
 - **SM-4** — Before approval, the change view shows exactly which cells change per job. Validates FR-15a.
 - **SM-5** — No import changes job data before it is approved, verified by tests. Validates FR-17.
 - **SM-6** — A file reporting an older revision is flagged with warning W8. Validates FR-14a (W8).
-- **SM-7** — A job whose expected delivery date is later than its due date is flagged as delayed. Validates FR-24.
+- **SM-7** — A job whose expected delivery date is later than its due date, or whose due date has passed while it is open, is flagged as delayed. Validates FR-24.
 - **SM-8** (Extension) — When two pending imports share a job and one is approved, the other shows the updated values, and a conflict field with W14 where it would overwrite them. The planner chooses per field. Validates FR-19, FR-20, FR-14b (W14), FR-15b.
 - **SM-9** — From the dashboard alone, the planner finds all jobs that are stopped, ready for inspection, delayed, or affected by a new revision. Validates FR-25.
 - **SM-10** — Stopped and stop reason are dropdowns with only the allowed values, and the stage columns accept only dates. Validates FR-9.
@@ -891,7 +893,4 @@ Decisions already made are listed in §0.1.
 
 ## 11. Assumptions Index
 
-Added after the review on 2026-11-25, awaiting confirmation from the project owner:
-
-- FR-12 (F5) — a file is also rejected when an import from its export has already been approved, and F5 is checked again at approval.
-- FR-12 (F1) — a file with more than 500 job rows is rejected.
+None open. All assumptions were confirmed by the project owner on 2026-11-25. New inferences are tagged `[ASSUMPTION]` inline and listed here.
