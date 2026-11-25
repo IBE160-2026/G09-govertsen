@@ -236,6 +236,7 @@ The PRD divides v1 into **Core** (create job → export → import → change vi
 - Multiple roles and login
 - Revision history
 - Approving or rejecting individual rows in an import
+- A customer or order field on jobs (later versions)
 - Sending email or integrating with shared folders — file transfer is manual
 - Replacing the company's ERP, PDM, PLM, MES, or quality systems
 - Storing engineering drawings as the authoritative source

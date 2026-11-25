@@ -1,6 +1,6 @@
 ---
 title: "PRD: Production Tracking System (PTS)"
-status: draft
+status: final
 created: 2026-11-08
 updated: 2026-11-25
 ---
@@ -30,7 +30,7 @@ This PRD turns the PTS product brief into requirements that architecture, UX, ep
 - **Rule IDs.** Validation rules keep the IDs from the brief: F1–F4, R1–R7 and W8–W15, plus F5 added by this PRD. The same rule has the same ID in the brief, this PRD, the stories and the tests. R3 and R4 are retired and their IDs are not reused.
 - **Priority.** Every FR has a priority, **Core** or **Extension** (§7.1). Core is the flow that must be finished and stable first: *create job → generate supplier file → import → change view → approve → dashboard*. The **Core minimum** (§7.1) is the smallest part of Core that works end to end, and is built first.
 - **Success metrics.** SM-1 … SM-12 correspond to success criteria 1–12 in the brief. SM-13 … SM-16 and the counter-metrics SM-C1 and SM-C2 are added by this PRD.
-- **Assumptions.** Inferences not yet confirmed are tagged `[ASSUMPTION]` inline and listed in §11. The other assumptions of PRD v1 and v2 were confirmed by the project owner on 2026-11-25.
+- **Assumptions.** Inferences not yet confirmed are tagged `[ASSUMPTION]` inline and listed in §11. All assumptions of PRD v1 and v2 were confirmed by the project owner on 2026-11-25, and none are open.
 - **Addendum.** Technical hints, template build details and screen sketches live in `addendum.md`.
 
 **All data in PTS, this PRD and the repository is fictional.** No real company, project or supplier names are used anywhere in the repository (NFR-8).
@@ -67,7 +67,7 @@ For reviewers. The first table lists the changes from brief v3 that were decided
 | A **Core minimum** of 20 requirements is defined, with a build order. | §7.1 | Lecturer feedback 4.2: Core is large for one semester. |
 | New file check **F5**: Core accepts only a file from the supplier's latest export, and only one pending import per supplier. Conflicts therefore cannot occur in Core. W9 and FR-19 replace the restriction in the Extension. | FR-11, FR-12 | Keeps the hardest rule (W14/W15) out of the first delivery without leaving a hidden risk in Core. |
 | *Register delivery* is Core (FR-29a). Closing and reopening by hand is Extension (FR-29b). | FR-29a, FR-29b | Delivery is the last step of the flow. |
-| Status stays `draft` until the assumptions in §11 are confirmed. | front matter | Lecturer feedback 4.4. |
+| All assumptions are confirmed, and the status is `final`. | front matter, §11 | Lecturer feedback 4.4. |
 
 ## 1. Vision
 
@@ -406,7 +406,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 - The planner selects the supplier and uploads an `.xlsx` file with the columns *Rom*, *Område*, *Tegningsnummer*, *Revisjon* and *Frist*. A template is provided (`addendum.md`).
 - PTS shows a preview before anything is created: the jobs it will create, and the rows it skips with the reason.
 - A row is skipped when the room, drawing number or revision is missing, or the due date is not a valid date.
-- A drawing number that already exists in PTS or earlier in the file is not skipped. It is shown with a warning in the preview, because the same drawing can be produced more than once, and the planner decides whether to confirm. `[ASSUMPTION]`
+- A drawing number that already exists in PTS or earlier in the file is not skipped. It is shown with a warning in the preview, because the same drawing can be produced more than once, and the planner decides whether to confirm.
 - Nothing is created until the planner confirms. Confirming creates all non-skipped rows as jobs in one all-or-nothing operation, each with a generated Job ID.
 - Afterwards PTS shows how many jobs were created and skipped. Job packages are not stored in a log (§7.2).
 - The same file limits as for supplier files apply (NFR-4).
@@ -595,7 +595,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 
 **Consequences (testable):**
 - When an approved import or a manual update sets *Stoppet* to *Nei*, the job's stop reason is cleared.
-- A file row with a stop reason but *Stoppet* = *Nei* is not rejected. The reason is ignored, and the change view says so. `[ASSUMPTION]`
+- A file row with a stop reason but *Stoppet* = *Nei* is not rejected. The reason is ignored, and the change view says so.
 - The comment is kept regardless of *Stoppet*.
 
 ### 4.4 Approval and Import Log
@@ -834,6 +834,7 @@ The user interface and the supplier file use these Norwegian labels. The PRD and
 - History of edits made through FR-2 and FR-3. Only supplier-reported fields, deliveries, closes and reopens are recorded in the job history.
 - Logging of file rejections and of job package imports. They are shown but not stored.
 - Deleting jobs or suppliers. Jobs are closed instead (FR-29a, FR-29b).
+- A customer or order field on jobs, for the same drawing produced for different customers. Later versions.
 
 ## 8. Success Metrics
 
@@ -877,7 +878,4 @@ Decisions already made are listed in §0.1.
 
 ## 11. Assumptions Index
 
-Two assumptions remain open:
-
-- FR-30 — A stop reason that does not fit *Stoppet* is ignored, not rejected.
-- FR-31 — A drawing number that already exists is a warning in the preview, not a skipped row.
+None open. All assumptions were confirmed by the project owner on 2026-11-25. New inferences are tagged `[ASSUMPTION]` inline and listed here.
